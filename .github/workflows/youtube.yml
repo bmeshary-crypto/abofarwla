@@ -18,7 +18,7 @@ jobs:
           node-version: 20
       - run: node scripts/fetch-youtube.mjs
         env:
-          YT_API_KEY: ${{ secrets.YT_API_KEY }}
+          YT_API_KEY: ${{ secrets.YT_API_KEY || secrets.YOUTU }}
       - name: Commit yt.json
         run: |
           git config user.name "github-actions[bot]"
