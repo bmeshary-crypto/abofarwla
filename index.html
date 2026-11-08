@@ -84,6 +84,7 @@ h3{font-size:16px;margin:18px 0 6px}
     <span id="msg"></span>
     <select id="quality" class="hide" title="الجودة"></select>
     <button class="btn rec" id="recBtn">⏺ تسجيل</button>
+    <button class="btn ghost" id="vlcBtn" title="يشغّل القناة في برنامج VLC أو أي مشغّل IPTV على جهازك">▶ افتح في VLC</button>
     <a class="btn hide" id="dlBtn" target="_blank" rel="noopener">⬇ تحميل الفيلم</a>
     <button class="btn ghost" id="timerBtn">⏰ تسجيل بمؤقت</button>
     <button class="btn" id="close">إغلاق</button>
@@ -194,7 +195,8 @@ const SOURCES = [
   ['القنوات العربية', 'languages/ara.m3u'],
   ['🎬 قنوات أفلام عربية وأجنبية 24 ساعة', 'languages/ara.m3u', 'Movies'],
   ['Free-TV (قائمة مختارة عالمية)', 'https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8'],
-  ['PRIME TV (13 ألف قناة مجانية)', './prime.m3u'],
+  ['PRIME TV (القنوات الشغالة — تُفحص يوميًا)', './prime.m3u'],
+  ['PRIME TV كامل 13 ألف قناة (افتحها في VLC)', './prime-src.m3u'],
   ['السعودية', 'countries/sa.m3u'],
   ['مصر', 'countries/eg.m3u'],
   ['الإمارات', 'countries/ae.m3u'],
@@ -269,6 +271,10 @@ function play(url, title, download) {
   msg('جاري التشغيل...');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
+  // browsers refuse http streams inside an https page; an external player can still open them
+  if (location.protocol === 'https:' && url.startsWith('http:')) {
+    return msg('هذه القناة لا تعمل داخل المتصفح — اضغط "افتح في VLC".', true);
+  }
   const isHls = /m3u8/i.test(url);
   if (isHls && window.Hls && Hls.isSupported()) {
     hls = new Hls({ enableWorker: true, capLevelToPlayerSize: false });
@@ -276,7 +282,7 @@ function play(url, title, download) {
     hls.attachMedia(video);
     hls.on(Hls.Events.MANIFEST_PARSED, () => { buildQuality(); video.play().catch(() => {}); });
     hls.on(Hls.Events.ERROR, (_, d) => {
-      if (d.fatal) msg('تعذّر تشغيل هذه القناة — قد تكون متوقفة حاليًا أو محجوبة في بلدك.', true);
+      if (d.fatal) msg('تعذّر تشغيلها في المتصفح — جرّب "افتح في VLC"، أو قد تكون متوقفة أو محجوبة في بلدك.', true);
     });
   } else {
     video.src = url;
@@ -285,7 +291,28 @@ function play(url, title, download) {
 }
 video.onplaying = () => msg('');
 video.onwaiting = () => msg('تحميل...');
-video.onerror = () => { if (!hls) msg('تعذّر تشغيل هذا الرابط.', true); };
+video.onerror = () => { if (!hls && current) msg('تعذّر تشغيله في المتصفح — جرّب "افتح في VLC".', true); };
+
+// Hand the stream to VLC (or any IPTV player): it isn't bound by the browser's
+// CORS and https rules, so many channels that fail here play there.
+function openExternal(url, title) {
+  const ua = navigator.userAgent;
+  if (/Android/i.test(ua)) {
+    const [scheme, rest] = url.split('://');
+    location.href = `intent://${rest}#Intent;scheme=${scheme};type=video/*;package=org.videolan.vlc;` +
+      `S.browser_fallback_url=${encodeURIComponent('https://play.google.com/store/apps/details?id=org.videolan.vlc')};end`;
+  } else if (/iPhone|iPad|iPod/i.test(ua)) {
+    location.href = 'vlc-x-callback://x-callback-url/stream?url=' + encodeURIComponent(url);
+  } else {
+    // desktop: a one-channel playlist file opens in VLC (or the default player) on double-click
+    const name = (title || 'channel').replace(/[\\/:*?"<>|]/g, '').trim() || 'channel';
+    const blob = new Blob([`#EXTM3U\n#EXTINF:-1,${title || ''}\n${url}\n`], { type: 'audio/x-mpegurl' });
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: name + '.m3u' });
+    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    msg('تم تنزيل ملف القناة — افتحه ببرنامج VLC.');
+  }
+}
+$('vlcBtn').onclick = () => current && openExternal(current.url, current.title);
 $('close').onclick = () => {
   if (rec) stopRec();
   if (hls) { hls.destroy(); hls = null; }
@@ -298,7 +325,7 @@ $('close').onclick = () => {
 function showYT(on) {
   $('ytWrap').classList.toggle('hide', !on);
   video.classList.toggle('hide', on);
-  ['recBtn', 'timerBtn'].forEach(id => $(id).classList.toggle('hide', on));
+  ['recBtn', 'timerBtn', 'vlcBtn'].forEach(id => $(id).classList.toggle('hide', on));
   if (on) { $('timerPanel').classList.add('hide'); $('dlBtn').classList.add('hide'); $('quality').classList.add('hide'); }
   else if ($('ytFrame').src) $('ytFrame').src = 'about:blank';
 }
