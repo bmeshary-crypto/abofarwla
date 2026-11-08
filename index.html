@@ -719,6 +719,7 @@ function ytCard({ id, t, c, d }) {
 }
 
 function ytShowList(films) {
+  films = films.filter(f => !/مسلسل|الحلقة|حلقة|episode/i.test(f.t)); // films only, no TV series
   $('ytGrid').innerHTML = films.length ? '' : '<p class="note">لا توجد نتائج.</p>';
   films.forEach(f => $('ytGrid').appendChild(ytCard(f)));
   $('ytMore').classList.add('hide');
