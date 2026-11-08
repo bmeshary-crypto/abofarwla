@@ -60,7 +60,7 @@ for (const [name, q] of CATS) {
   const films = items
     .filter(i => !seen.has(i.id.videoId) && seen.add(i.id.videoId))
     .map(i => ({ id: i.id.videoId, t: i.snippet.title, c: i.snippet.channelTitle, d: dur[i.id.videoId] || '' }))
-    .filter(f => f.d && !BLOCK.test(f.t));
+    .filter(f => f.d && !BLOCK.test(f.t) && !/مسلسل|الحلقة|حلقة|episode/i.test(f.t));
   out.cats.push({ name, films });
   console.log(name, films.length);
 }
