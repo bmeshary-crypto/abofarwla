@@ -51,6 +51,8 @@ button.btn.rec{background:#e53935;color:#fff}
 button.btn.rec.on{animation:blink 1s steps(2) infinite}
 @keyframes blink{50%{background:#7a1d1b}}
 @media (prefers-reduced-motion:reduce){button.btn.rec.on{animation:none}}
+#ytWrap{width:100%;aspect-ratio:16/9;max-height:62vh;background:#000}
+#ytWrap iframe{width:100%;height:100%;border:0;display:block}
 #timerPanel{padding:10px 12px;background:#0b0d11;border-top:1px solid #222}
 #timerPanel input{background:var(--card2);color:var(--fg);border:1px solid #2c313c;border-radius:8px;padding:6px 8px;font:inherit}
 #tDur{width:80px}
@@ -66,7 +68,8 @@ h3{font-size:16px;margin:18px 0 6px}
   <h1><img src="logo.jpg" alt="">أبو فراولة TV</h1>
   <nav id="tabs">
     <button data-tab="tv" class="on">القنوات المجانية</button>
-    <button data-tab="movies">أفلام مجانية</button>
+    <button data-tab="yt">أفلام يوتيوب</button>
+    <button data-tab="movies">أفلام كلاسيكية</button>
     <button data-tab="fav">المفضلة</button>
     <button data-tab="custom">رابط / قائمة خاصة</button>
     <button data-tab="local">ملفات جهازي</button>
@@ -75,6 +78,7 @@ h3{font-size:16px;margin:18px 0 6px}
 
 <div id="player" class="hide">
   <video id="video" controls playsinline></video>
+  <div id="ytWrap" class="hide"><iframe id="ytFrame" title="YouTube" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div>
   <div id="bar">
     <span id="now"></span>
     <span id="msg"></span>
@@ -146,6 +150,34 @@ h3{font-size:16px;margin:18px 0 6px}
     <div class="tools"><label class="note">أو افتح ملف M3U من جهازك: <input type="file" id="cfile" accept=".m3u,.m3u8,audio/x-mpegurl"></label></div>
   </section>
 
+  <!-- YouTube -->
+  <section id="tab-yt" class="hide">
+    <div id="ytSetup" class="hide">
+      <h3>تفعيل أفلام يوتيوب (مرة وحدة فقط)</h3>
+      <p class="note">البحث في يوتيوب يحتاج مفتاحًا مجانيًا من Google:</p>
+      <ol class="note">
+        <li>افتح <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener">صفحة YouTube Data API v3</a> وسجّل دخولك بحساب Google.</li>
+        <li>أنشئ مشروعًا جديدًا (أي اسم)، ثم اضغط <b>Enable</b>.</li>
+        <li>من <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Credentials</a> اضغط <b>Create credentials ← API key</b> وانسخ المفتاح.</li>
+        <li>الصقه هنا واضغط حفظ. يُحفظ على جهازك فقط.</li>
+      </ol>
+      <div class="tools">
+        <input type="text" id="ytKeyIn" placeholder="AIza...">
+        <button class="btn" id="ytSaveKey">حفظ المفتاح</button>
+      </div>
+    </div>
+    <div id="ytMain" class="hide">
+      <div class="tools">
+        <input type="text" id="ytQ" placeholder="ابحث عن فيلم... مثال: فيلم اسماعيل ياسين">
+        <button class="btn" id="ytGo">بحث</button>
+      </div>
+      <div class="tools" id="ytChips"></div>
+      <p class="note">أفلام كاملة (أطول من 20 دقيقة) يسمح أصحابها بعرضها خارج يوتيوب. <button class="chip" id="ytChangeKey">تغيير المفتاح</button></p>
+      <div id="ytGrid" class="grid"></div>
+      <button class="chip more hide" id="ytMore">عرض المزيد</button>
+    </div>
+  </section>
+
   <!-- Local -->
   <section id="tab-local" class="hide">
     <p class="note">شغّل أفلامك المحفوظة على الجهاز (MP4 / WebM / MKV حسب دعم المتصفح).</p>
@@ -212,6 +244,7 @@ $('tabs').onclick = e => {
   document.querySelectorAll('main > section').forEach(s => s.classList.toggle('hide', s.id !== 'tab-' + t));
   if (t === 'fav') renderFavs();
   if (t === 'movies' && !$('mGrid').children.length) searchMovies();
+  if (t === 'yt') ytInit();
   store.set('tab', t);
 };
 
@@ -226,6 +259,7 @@ function play(url, title, download) {
   $('dlBtn').classList.toggle('hide', !download);
   $('recBtn').classList.toggle('hide', !!download);
   if (download) $('dlBtn').href = download;
+  showYT(false);
   if (hls) { hls.destroy(); hls = null; }
   video.removeAttribute('src'); video.load();
   $('quality').classList.add('hide');
@@ -255,8 +289,31 @@ $('close').onclick = () => {
   if (rec) stopRec();
   if (hls) { hls.destroy(); hls = null; }
   video.pause(); video.removeAttribute('src'); video.load();
+  showYT(false);
   $('player').classList.add('hide');
 };
+
+// YouTube videos play in an embedded YouTube player instead of the <video> element
+function showYT(on) {
+  $('ytWrap').classList.toggle('hide', !on);
+  video.classList.toggle('hide', on);
+  ['recBtn', 'timerBtn'].forEach(id => $(id).classList.toggle('hide', on));
+  if (on) { $('timerPanel').classList.add('hide'); $('dlBtn').classList.add('hide'); $('quality').classList.add('hide'); }
+  else if ($('ytFrame').src) $('ytFrame').src = 'about:blank';
+}
+
+function playYT(id, title) {
+  if (rec) stopRec();
+  if (hls) { hls.destroy(); hls = null; }
+  video.pause(); video.removeAttribute('src'); video.load();
+  current = null;
+  showYT(true);
+  $('ytFrame').src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?autoplay=1&rel=0&playsinline=1`;
+  $('player').classList.remove('hide');
+  $('now').textContent = title;
+  msg('');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
 function buildQuality() {
   const sel = $('quality');
@@ -617,6 +674,86 @@ $('lfile').onchange = e => {
     g.appendChild(el);
   });
 };
+
+// ---------- YouTube full movies ----------
+const YT_CHIPS = [
+  ['أفلام عربية', 'فيلم عربي كامل'], ['مصري قديم', 'فيلم مصري قديم كامل'], ['أبيض وأسود', 'فيلم ابيض واسود كامل'],
+  ['كوميدي', 'فيلم كوميدي عربي كامل'], ['خليجي', 'فيلم خليجي كامل'], ['سوري ولبناني', 'فيلم سوري كامل'],
+  ['أجنبي مترجم', 'full movie arabic subtitles'], ['أجنبي', 'full movie english'],
+  ['أطفال مدبلج', 'فيلم كرتون كامل مدبلج'], ['وثائقي', 'فيلم وثائقي كامل'],
+];
+let ytKey = store.get('ytKey', ''), ytQuery = '', ytNext = '';
+
+const decodeHtml = s => { const t = document.createElement('textarea'); t.innerHTML = s; return t.value; };
+const isoDur = d => {
+  const m = /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/.exec(d || ''); if (!m) return '';
+  const [h, mi, s] = [m[1], m[2], m[3]].map(x => +x || 0);
+  return (h ? h + ':' + String(mi).padStart(2, '0') : mi) + ':' + String(s).padStart(2, '0');
+};
+
+function ytInit() {
+  $('ytSetup').classList.toggle('hide', !!ytKey);
+  $('ytMain').classList.toggle('hide', !ytKey);
+  if (ytKey && !$('ytGrid').children.length) ytSearch(YT_CHIPS[0][1]);
+}
+
+$('ytChips').innerHTML = YT_CHIPS.map(([n, q], i) => `<button class="chip${i ? '' : ' on'}" data-q="${esc(q)}">${n}</button>`).join('');
+$('ytChips').onclick = e => {
+  const q = e.target.dataset && e.target.dataset.q; if (!q) return;
+  document.querySelectorAll('#ytChips .chip').forEach(b => b.classList.toggle('on', b === e.target));
+  $('ytQ').value = '';
+  ytSearch(q);
+};
+$('ytGo').onclick = () => {
+  const q = $('ytQ').value.trim(); if (!q) return;
+  document.querySelectorAll('#ytChips .chip').forEach(b => b.classList.remove('on'));
+  ytSearch(/فيلم|movie|film/i.test(q) ? q : q + ' فيلم كامل');
+};
+$('ytQ').onkeydown = e => { if (e.key === 'Enter') $('ytGo').click(); };
+$('ytMore').onclick = () => ytSearch(ytQuery, true);
+$('ytSaveKey').onclick = () => {
+  const k = $('ytKeyIn').value.trim(); if (!k) return $('ytKeyIn').focus();
+  ytKey = k; store.set('ytKey', k); ytInit();
+};
+$('ytChangeKey').onclick = () => { ytKey = ''; store.set('ytKey', ''); $('ytKeyIn').value = ''; $('ytGrid').innerHTML = ''; ytInit(); };
+
+async function ytSearch(q, more) {
+  if (!more) { ytQuery = q; ytNext = ''; $('ytGrid').innerHTML = '<p class="note">جاري البحث...</p>'; }
+  const p = new URLSearchParams({
+    part: 'snippet', type: 'video', videoDuration: 'long', videoEmbeddable: 'true', safeSearch: 'strict',
+    maxResults: '24', regionCode: 'SA', relevanceLanguage: 'ar', q, key: ytKey,
+  });
+  if (more && ytNext) p.set('pageToken', ytNext);
+  try {
+    const j = await (await fetch('https://www.googleapis.com/youtube/v3/search?' + p)).json();
+    if (j.error) throw j.error;
+    ytNext = j.nextPageToken || '';
+    const items = j.items.filter(i => i.id.videoId && !BLOCK_RE.test(decodeHtml(i.snippet.title)));
+    const dur = {};
+    if (items.length) {
+      const d = await (await fetch('https://www.googleapis.com/youtube/v3/videos?' + new URLSearchParams({
+        part: 'contentDetails', id: items.map(i => i.id.videoId).join(','), key: ytKey,
+      }))).json();
+      (d.items || []).forEach(v => { dur[v.id] = v.contentDetails.duration; });
+    }
+    if (!more) $('ytGrid').innerHTML = items.length ? '' : '<p class="note">لا توجد نتائج.</p>';
+    items.forEach(i => {
+      const id = i.id.videoId, s = i.snippet, title = decodeHtml(s.title);
+      const el = document.createElement('div');
+      el.className = 'item';
+      el.innerHTML = `<img loading="lazy" src="${esc((s.thumbnails.medium || s.thumbnails.default || {}).url || PH)}" alt="">
+        <div class="t">${esc(title)}</div><div class="g">${esc(decodeHtml(s.channelTitle))}${dur[id] ? ' · ' + isoDur(dur[id]) : ''}</div>`;
+      el.onclick = () => playYT(id, title);
+      $('ytGrid').appendChild(el);
+    });
+    $('ytMore').classList.toggle('hide', !ytNext);
+  } catch (e) {
+    const quota = e && (e.code === 403 || e.code === 400);
+    $('ytGrid').innerHTML = `<p class="note">${quota
+      ? 'المفتاح غير صحيح، أو انتهت حصة اليوم المجانية (حوالي 100 بحث في اليوم). تأكد من المفتاح أو جرّب بكرة.'
+      : 'تعذّر الاتصال بيوتيوب. تأكد من الإنترنت.'}</p>`;
+  }
+}
 
 // ---------- start ----------
 loadSource($('src').value);
