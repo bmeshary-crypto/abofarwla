@@ -7,15 +7,13 @@
   "author": "bmeshary-crypto",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win portable nsis --publish never",
-    "dist:quran": "electron-builder --win portable nsis --publish never -c.extraMetadata.siteUrl=https://bmeshary-crypto.github.io/abofarwla/quran/ -c.extraMetadata.appTag=QuranSunnahApp -c.extraMetadata.appIcon=quran-icon.png -c.productName=QuranSunnahTV -c.appId=io.github.bmeshary-crypto.quransunnah -c.win.icon=quran-icon.png -c.directories.output=dist-quran -c.portable.artifactName=QuranSunnah-TV-portable.exe -c.nsis.artifactName=QuranSunnah-TV-Setup.exe"
+    "dist": "electron-builder --win portable nsis --publish never"
   },
   "build": {
     "appId": "io.github.bmeshary-crypto.abofarwla",
     "files": [
       "main.js",
-      "icon.png",
-      "quran-icon.png"
+      "icon.png"
     ],
     "win": {
       "icon": "icon.png",

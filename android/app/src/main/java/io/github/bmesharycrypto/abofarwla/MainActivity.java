@@ -26,7 +26,7 @@ import java.util.Map;
 // that don't send CORS headers; this app fetches stream requests itself and
 // adds the header, so channels play inside it the way they do in VLC.
 public class MainActivity extends Activity {
-    static final String SITE = BuildConfig.SITE;
+    static final String SITE = "https://bmeshary-crypto.github.io/abofarwla/";
     WebView web;
     View fullView;
     ValueCallback<Uri[]> pickCallback;
@@ -41,7 +41,7 @@ public class MainActivity extends Activity {
         s.setDomStorageEnabled(true);
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " " + BuildConfig.UA_TAG);
+        s.setUserAgentString(s.getUserAgentString() + " AbuFarawlaApp");
 
         web.setWebViewClient(new WebViewClient() {
             @Override
