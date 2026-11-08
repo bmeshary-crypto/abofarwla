@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>القرآن والسنة TV</title>
+<meta name="description" content="قنوات القرآن الكريم، الإذاعات، تلاوات جميع القراء، الأحاديث النبوية، ومحاضرات العلماء">
+<meta name="theme-color" content="#0b3d2e">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f6f3ea; --panel: #fffdf7; --ink: #1f2a24; --muted: #66706a; --line: #e4dccb;
+  --green: #0b5e43; --green-2: #0b3d2e; --gold: #b8892b; --gold-soft: #f3e6c4; --bad: #b3261e;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0d1512; --panel: #14201b; --ink: #ece6d6; --muted: #9aa69f; --line: #263630;
+    --green: #2fa57a; --green-2: #0b2a20; --gold: #d8ae58; --gold-soft: #2b2617; --bad: #ff8a80; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: Tajawal, system-ui, sans-serif; }
+header { background: linear-gradient(135deg, var(--green-2), var(--green)); color: #fff; padding: 14px 16px 0; }
+.brand { display: flex; align-items: center; gap: 12px; max-width: 1200px; margin: 0 auto; }
+.brand img { width: 46px; height: 46px; border-radius: 12px; }
+.brand h1 { margin: 0; font-family: Amiri, serif; font-size: 26px; font-weight: 700; }
+.brand p { margin: 0; opacity: .85; font-size: 13px; }
+#tabs { display: flex; gap: 4px; max-width: 1200px; margin: 12px auto 0; overflow-x: auto; scrollbar-width: none; }
+#tabs button { flex: none; border: 0; background: transparent; color: #fff; opacity: .8; font: inherit; font-size: 15px;
+  padding: 10px 14px; border-radius: 10px 10px 0 0; cursor: pointer; }
+#tabs button.on { background: var(--bg); color: var(--green); opacity: 1; font-weight: 700; }
+main { max-width: 1200px; margin: 0 auto; padding: 16px; }
+.hide { display: none !important; }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+input[type=search], select { font: inherit; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--panel); color: var(--ink); min-width: 0; flex: 1 1 200px; }
+.btn { font: inherit; border: 0; border-radius: 10px; padding: 9px 14px; background: var(--green); color: #fff; cursor: pointer;
+  text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.btn.ghost { background: var(--gold-soft); color: var(--ink); }
+.note { color: var(--muted); font-size: 14px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.chip { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 999px; padding: 6px 12px;
+  font: inherit; font-size: 14px; cursor: pointer; }
+.chip.on { background: var(--green); border-color: var(--green); color: #fff; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+.item { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; cursor: pointer;
+  transition: transform .15s, box-shadow .15s; }
+.item:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgb(0 0 0 / .08); }
+.item img { width: 100%; aspect-ratio: 16/9; object-fit: cover; background: var(--gold-soft); display: block; }
+.item .logo { object-fit: contain; padding: 10px; }
+.item .t { padding: 8px 10px 2px; font-weight: 500; font-size: 14px; line-height: 1.4;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.item .g { padding: 0 10px 9px; color: var(--muted); font-size: 12px; }
+.list { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.row { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  padding: 10px 12px; cursor: pointer; text-align: start; font: inherit; color: inherit; width: 100%; }
+.row:hover, .row.on { border-color: var(--green); }
+.row.on { background: var(--gold-soft); }
+.row .n { flex: none; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--gold-soft);
+  color: var(--gold); font-weight: 700; font-size: 13px; }
+.row small { display: block; color: var(--muted); font-size: 12px; }
+#player { position: sticky; top: 0; z-index: 5; background: #000; border-radius: 14px; overflow: hidden; margin-bottom: 16px; }
+#player video, #ytWrap { width: 100%; aspect-ratio: 16/9; display: block; background: #000; }
+#ytWrap iframe { width: 100%; height: 100%; border: 0; }
+#bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 10px; background: var(--green-2); color: #fff; }
+#now { flex: 1 1 200px; font-weight: 500; }
+#msg { font-size: 13px; opacity: .9; }
+#msg.bad { color: #ffb4ab; opacity: 1; }
+#audioBar { position: fixed; inset: auto 0 0 0; z-index: 9; background: var(--green-2); color: #fff; padding: 10px 16px;
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center; box-shadow: 0 -4px 18px rgb(0 0 0 / .2); }
+#audioBar audio { flex: 1 1 260px; height: 38px; }
+#aNow { flex: 1 1 180px; font-weight: 500; }
+#audioBar .btn { background: rgb(255 255 255 / .14); }
+body.playing-audio main { padding-bottom: 110px; }
+.hadith { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 10px; }
+.hadith p { font-family: Amiri, serif; font-size: 21px; line-height: 2; margin: 0 0 6px; }
+.hadith .meta { color: var(--muted); font-size: 13px; display: flex; gap: 10px; flex-wrap: wrap; }
+.grade { background: var(--gold-soft); color: var(--gold); border-radius: 6px; padding: 1px 8px; }
+.daily { background: linear-gradient(135deg, var(--gold-soft), var(--panel)); border-color: var(--gold); }
+h2 { font-family: Amiri, serif; font-size: 22px; margin: 6px 0 12px; color: var(--green); }
+.pager { display: flex; gap: 8px; justify-content: center; margin: 16px 0; }
+footer { text-align: center; color: var(--muted); font-size: 12px; padding: 24px 16px 40px; }
+footer a { color: inherit; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <img src="icon-192.png" alt="">
+    <div><h1>القرآن والسنة TV</h1><p>قنوات وإذاعات القرآن، تلاوات القرّاء، الأحاديث النبوية، ومحاضرات العلماء</p></div>
+  </div>
+  <nav id="tabs">
+    <button data-tab="tv" class="on">📺 القنوات</button>
+    <button data-tab="radio">📻 الإذاعات</button>
+    <button data-tab="reciters">🎙️ القرّاء</button>
+    <button data-tab="lectures">🎓 المحاضرات</button>
+    <button data-tab="hadith">📜 الأحاديث</button>
+    <button data-tab="fav">⭐ المفضلة</button>
+  </nav>
+</header>
+
+<main>
+  <div id="player" class="hide">
+    <video id="video" controls playsinline></video>
+    <div id="ytWrap" class="hide"><iframe id="ytFrame" title="YouTube" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div>
+    <div id="bar">
+      <span id="now"></span><span id="msg"></span>
+      <a class="btn ghost hide" id="appBtn" href="https://github.com/bmeshary-crypto/abofarwla/releases/tag/quran" target="_blank" rel="noopener">📥 حمّل التطبيق لتشغيلها</a>
+      <button class="btn ghost" id="close">إغلاق</button>
+    </div>
+  </div>
+
+  <section id="tab-tv">
+    <div class="chips" id="tvChips"></div>
+    <div id="tvGrid" class="grid"></div>
+  </section>
+
+  <section id="tab-radio" class="hide">
+    <div class="tools"><input type="search" id="rq" placeholder="ابحث عن إذاعة أو قارئ..."></div>
+    <div id="rList" class="list"></div>
+  </section>
+
+  <section id="tab-reciters" class="hide">
+    <div id="recPick">
+      <div class="tools"><input type="search" id="recQ" placeholder="ابحث عن قارئ... (مثال: المنشاوي، السديس، العفاسي)"></div>
+      <div id="recList" class="list"></div>
+    </div>
+    <div id="recView" class="hide">
+      <div class="tools">
+        <button class="btn ghost" id="recBack">→ كل القرّاء</button>
+        <select id="moshaf"></select>
+        <input type="search" id="surQ" placeholder="ابحث عن سورة...">
+      </div>
+      <h2 id="recName"></h2>
+      <div id="surList" class="list"></div>
+    </div>
+  </section>
+
+  <section id="tab-lectures" class="hide">
+    <div class="tools"><input type="search" id="lq" placeholder="ابحث في المحاضرات... (مثال: التوحيد، الصلاة، رمضان)"></div>
+    <div class="chips" id="lChips"></div>
+    <div id="lGrid" class="grid"></div>
+  </section>
+
+  <section id="tab-hadith" class="hide">
+    <div class="hadith daily" id="daily"></div>
+    <div class="tools">
+      <select id="book"></select>
+      <select id="section"></select>
+      <input type="search" id="hq" placeholder="ابحث في هذا الكتاب...">
+    </div>
+    <div id="hList"></div>
+    <div class="pager"><button class="btn ghost" id="hMore">عرض المزيد</button></div>
+  </section>
+
+  <section id="tab-fav" class="hide">
+    <div id="favList" class="list"></div>
+  </section>
+</main>
+
+<div id="audioBar" class="hide">
+  <span id="aNow"></span>
+  <button class="btn" id="aPrev" title="السابق">⏮</button>
+  <audio id="audio" controls preload="none"></audio>
+  <button class="btn" id="aNext" title="التالي">⏭</button>
+  <button class="btn" id="aClose" title="إغلاق">✕</button>
+</div>
+
+<footer>
+  المصادر: <a href="https://mp3quran.net" target="_blank" rel="noopener">mp3quran.net</a> للتلاوات والإذاعات،
+  <a href="https://github.com/fawazahmed0/hadith-api" target="_blank" rel="noopener">hadith-api</a> للأحاديث،
+  والقنوات الرسمية البث المجاني، ومحاضرات يوتيوب من قنواتها.
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const store = {
+  get(k, d) { try { return JSON.parse(localStorage.getItem('qs_' + k)) ?? d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('qs_' + k, JSON.stringify(v)); } catch {} },
+};
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// Arabic search: ignore hamza forms, taa marbuta, alif maqsura and diacritics
+const norm = s => String(s).replace(/[ً-ْٰـ]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').toLowerCase();
+const IN_APP = /AbuFarawlaApp|QuranSunnahApp/.test(navigator.userAgent);
+const MP3Q = 'https://www.mp3quran.net/api/v3/';
+const HADITH = 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/';
+let favs = store.get('favs', []);
+
+// ---------- tabs ----------
+const inits = {};
+$('tabs').onclick = e => {
+  const t = e.target.dataset.tab; if (!t) return;
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  document.querySelectorAll('main > section').forEach(s => s.classList.toggle('hide', s.id !== 'tab-' + t));
+  if (inits[t]) inits[t]();
+  store.set('tab', t);
+};
+
+// ---------- video player (channels, YouTube) ----------
+const video = $('video'); let hls = null, current = null;
+function msg(t, bad) { $('msg').textContent = t || ''; $('msg').classList.toggle('bad', !!bad); }
+function stopVideo() {
+  if (hls) { hls.destroy(); hls = null; }
+  video.pause(); video.removeAttribute('src'); video.load();
+  if ($('ytFrame').src) $('ytFrame').src = 'about:blank';
+}
+function openPlayer(title, yt) {
+  stopAudio();
+  stopVideo();
+  $('appBtn').classList.add('hide');
+  $('ytWrap').classList.toggle('hide', !yt); video.classList.toggle('hide', yt);
+  $('player').classList.remove('hide'); $('now').textContent = title; msg(yt ? '' : 'جاري التشغيل...');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function needApp() {
+  msg('المتصفح لا يسمح بتشغيل هذه القناة — تعمل داخل تطبيق القرآن والسنة TV.', true);
+  $('appBtn').classList.remove('hide');
+}
+function playStream(url, title) {
+  openPlayer(title, false); current = url;
+  if (!IN_APP && location.protocol === 'https:' && url.startsWith('http:')) return needApp();
+  if (window.Hls && Hls.isSupported()) {
+    hls = new Hls({ enableWorker: true });
+    hls.loadSource(url); hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
+    hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) IN_APP ? msg('تعذّر تشغيل القناة الآن — قد تكون متوقفة مؤقتًا.', true) : needApp(); });
+  } else { video.src = url; video.play().catch(() => {}); }
+}
+function playYT(id, title) {
+  openPlayer(title, true); current = null;
+  $('ytFrame').src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`;
+}
+video.onplaying = () => msg('');
+video.onwaiting = () => msg('تحميل...');
+$('close').onclick = () => { stopVideo(); $('player').classList.add('hide'); };
+
+// ---------- audio player (radio, recitations) ----------
+const audio = $('audio'); let queue = [], qi = 0;
+function playAudio(items, i) {
+  stopVideo(); $('player').classList.add('hide');
+  queue = items; qi = i;
+  const it = queue[qi];
+  audio.src = it.url; audio.play().catch(() => {});
+  $('aNow').textContent = it.title;
+  $('aPrev').classList.toggle('hide', queue.length < 2); $('aNext').classList.toggle('hide', queue.length < 2);
+  $('audioBar').classList.remove('hide'); document.body.classList.add('playing-audio');
+  document.querySelectorAll('.row[data-url]').forEach(r => r.classList.toggle('on', r.dataset.url === it.url));
+  if ('mediaSession' in navigator) navigator.mediaSession.metadata = new MediaMetadata({ title: it.title, artist: 'القرآن والسنة TV' });
+}
+function stopAudio() { audio.pause(); audio.removeAttribute('src'); $('audioBar').classList.add('hide'); document.body.classList.remove('playing-audio'); }
+$('aNext').onclick = () => queue.length && playAudio(queue, (qi + 1) % queue.length);
+$('aPrev').onclick = () => queue.length && playAudio(queue, (qi - 1 + queue.length) % queue.length);
+$('aClose').onclick = stopAudio;
+audio.onended = () => { if (queue.length > 1 && qi < queue.length - 1) playAudio(queue, qi + 1); };
+if ('mediaSession' in navigator) {
+  navigator.mediaSession.setActionHandler('nexttrack', () => $('aNext').click());
+  navigator.mediaSession.setActionHandler('previoustrack', () => $('aPrev').click());
+}
+
+function row({ n, title, sub, url, onclick, fav }) {
+  const b = document.createElement('button');
+  b.className = 'row'; if (url) b.dataset.url = url;
+  const isFav = fav && favs.some(f => f.url === fav.url);
+  b.innerHTML = `<span class="n">${esc(n)}</span><span style="flex:1">${esc(title)}${sub ? `<small>${esc(sub)}</small>` : ''}</span>` +
+    (fav ? `<span class="star" title="المفضلة">${isFav ? '★' : '☆'}</span>` : '');
+  b.onclick = e => {
+    if (e.target.classList.contains('star')) {
+      const i = favs.findIndex(f => f.url === fav.url);
+      if (i >= 0) favs.splice(i, 1); else favs.push(fav);
+      store.set('favs', favs); e.target.textContent = i >= 0 ? '☆' : '★';
+      return;
+    }
+    onclick();
+  };
+  return b;
+}
+
+// ---------- TV ----------
+let channels = [];
+function parseM3U(text) {
+  const out = []; let cur = null;
+  for (const raw of text.split(/\r?\n/)) {
+    const l = raw.trim(); if (!l) continue;
+    if (l.startsWith('#EXTINF')) {
+      const attr = k => (l.match(new RegExp(k + '="([^"]*)"')) || [])[1] || '';
+      cur = { name: l.slice(l.lastIndexOf(',') + 1).trim(), logo: attr('tvg-logo'), group: attr('group-title') };
+    } else if (!l.startsWith('#')) { out.push({ ...(cur || { name: l, logo: '', group: '' }), url: l }); cur = null; }
+  }
+  return out;
+}
+async function initTV() {
+  try { channels = parseM3U(await (await fetch('channels.m3u', { cache: 'no-cache' })).text()); }
+  catch { $('tvGrid').innerHTML = '<p class="note">تعذّر تحميل القنوات. تأكد من الاتصال بالإنترنت.</p>'; return; }
+  const groups = ['الكل', ...new Set(channels.map(c => c.group))];
+  $('tvChips').innerHTML = '';
+  groups.forEach((g, i) => {
+    const c = document.createElement('button'); c.className = 'chip' + (i ? '' : ' on'); c.textContent = g;
+    c.onclick = () => { document.querySelectorAll('#tvChips .chip').forEach(x => x.classList.toggle('on', x === c)); renderTV(i ? g : ''); };
+    $('tvChips').append(c);
+  });
+  renderTV('');
+}
+const PH = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 9"><text x="8" y="6" font-size="4" text-anchor="middle">📖</text></svg>');
+function renderTV(g) {
+  const grid = $('tvGrid'); grid.innerHTML = '';
+  channels.filter(c => !g || c.group === g).forEach(c => {
+    const el = document.createElement('div'); el.className = 'item';
+    el.innerHTML = `<img class="logo" loading="lazy" src="${esc(c.logo || PH)}" onerror="this.src='${PH}'" alt=""><div class="t">${esc(c.name)}</div><div class="g">${esc(c.group)}</div>`;
+    el.onclick = () => playStream(c.url, c.name);
+    grid.append(el);
+  });
+}
+
+// ---------- radio ----------
+let radios = null;
+inits.radio = async () => {
+  if (radios) return;
+  $('rList').innerHTML = '<p class="note">جاري التحميل...</p>';
+  try { radios = (await (await fetch(MP3Q + 'radios?language=ar')).json()).radios; }
+  catch { radios = null; $('rList').innerHTML = '<p class="note">تعذّر تحميل الإذاعات.</p>'; return; }
+  renderRadios();
+};
+function renderRadios() {
+  const q = norm($('rq').value.trim());
+  const list = radios.filter(r => !q || norm(r.name).includes(q)).map(r => ({ url: r.url, title: r.name }));
+  $('rList').innerHTML = '';
+  list.slice(0, 400).forEach((r, i) => $('rList').append(row({ n: '📻', title: r.title, url: r.url,
+    fav: { kind: 'radio', ...r }, onclick: () => playAudio(list, i) })));
+}
+$('rq').oninput = () => radios && renderRadios();
+
+// ---------- reciters ----------
+let reciters = null, suwar = null, curRec = null;
+inits.reciters = async () => {
+  if (reciters) return;
+  $('recList').innerHTML = '<p class="note">جاري تحميل القرّاء...</p>';
+  try {
+    const [a, b] = await Promise.all([fetch(MP3Q + 'reciters?language=ar'), fetch(MP3Q + 'suwar?language=ar')]);
+    reciters = (await a.json()).reciters.sort((x, y) => x.name.localeCompare(y.name, 'ar'));
+    suwar = Object.fromEntries((await b.json()).suwar.map(s => [s.id, s]));
+  } catch { reciters = null; $('recList').innerHTML = '<p class="note">تعذّر تحميل القرّاء.</p>'; return; }
+  renderReciters();
+};
+function renderReciters() {
+  const q = norm($('recQ').value.trim());
+  $('recList').innerHTML = '';
+  reciters.filter(r => !q || norm(r.name).includes(q)).forEach(r =>
+    $('recList').append(row({ n: r.letter || '🎙️', title: r.name, sub: `${r.moshaf.length} ${r.moshaf.length > 1 ? 'مصاحف' : 'مصحف'}`, onclick: () => openReciter(r) })));
+}
+$('recQ').oninput = () => reciters && renderReciters();
+function openReciter(r) {
+  curRec = r;
+  $('recPick').classList.add('hide'); $('recView').classList.remove('hide');
+  $('recName').textContent = r.name;
+  $('moshaf').innerHTML = r.moshaf.map((m, i) => `<option value="${i}">${esc(m.name)} — ${m.surah_total} سورة</option>`).join('');
+  $('surQ').value = ''; renderSuwar();
+  window.scrollTo({ top: 0 });
+}
+function surahList() {
+  const m = curRec.moshaf[+$('moshaf').value];
+  return m.surah_list.split(',').filter(Boolean).map(Number).map(id => ({
+    id, url: m.server + String(id).padStart(3, '0') + '.mp3',
+    title: `سورة ${suwar[id]?.name || id} — ${curRec.name}`, name: suwar[id]?.name || String(id),
+    sub: suwar[id] ? (suwar[id].makkia ? 'مكية' : 'مدنية') : '',
+  }));
+}
+function renderSuwar() {
+  const all = surahList(), q = norm($('surQ').value.trim());
+  $('surList').innerHTML = '';
+  all.forEach((s, i) => {
+    if (q && !norm(s.name).includes(q) && String(s.id) !== q) return;
+    $('surList').append(row({ n: s.id, title: 'سورة ' + s.name, sub: s.sub, url: s.url,
+      fav: { kind: 'surah', url: s.url, title: s.title }, onclick: () => playAudio(all, i) }));
+  });
+}
+$('moshaf').onchange = renderSuwar;
+$('surQ').oninput = () => curRec && renderSuwar();
+$('recBack').onclick = () => { $('recView').classList.add('hide'); $('recPick').classList.remove('hide'); };
+
+// ---------- lectures (YouTube list rebuilt daily by a GitHub Action, so no key is needed) ----------
+let lec = null, lecCat = 0;
+inits.lectures = async () => {
+  if (lec) return;
+  $('lGrid').innerHTML = '<p class="note">جاري التحميل...</p>';
+  try { lec = await (await fetch('yt.json', { cache: 'no-cache' })).json(); }
+  catch { lec = null; $('lGrid').innerHTML = '<p class="note">قائمة المحاضرات غير متاحة الآن، حاول لاحقًا.</p>'; return; }
+  $('lChips').innerHTML = '';
+  lec.cats.forEach((c, i) => {
+    const b = document.createElement('button'); b.className = 'chip' + (i ? '' : ' on'); b.textContent = c.name;
+    b.onclick = () => { $('lq').value = ''; lecCat = i; document.querySelectorAll('#lChips .chip').forEach(x => x.classList.toggle('on', x === b)); renderLectures(c.videos); };
+    $('lChips').append(b);
+  });
+  renderLectures(lec.cats[0]?.videos || []);
+};
+const fmtDur = d => { const m = /PT(?:(\d+)H)?(?:(\d+)M)?/.exec(d) || []; return m[1] ? `${m[1]} س ${m[2] || 0} د` : `${m[2] || 0} د`; };
+function renderLectures(list) {
+  const g = $('lGrid'); g.innerHTML = '';
+  if (!list.length) { g.innerHTML = '<p class="note">لا توجد نتائج.</p>'; return; }
+  list.slice(0, 300).forEach(v => {
+    const el = document.createElement('div'); el.className = 'item';
+    el.innerHTML = `<img loading="lazy" src="https://i.ytimg.com/vi/${v.id}/mqdefault.jpg" alt=""><div class="t">${esc(v.t)}</div><div class="g">${esc(v.c)} · ${fmtDur(v.d)}</div>`;
+    el.onclick = () => playYT(v.id, v.t);
+    g.append(el);
+  });
+}
+$('lq').oninput = () => {
+  if (!lec) return;
+  const q = norm($('lq').value.trim());
+  document.querySelectorAll('#lChips .chip').forEach((x, i) => x.classList.toggle('on', !q && i === lecCat));
+  if (!q) return renderLectures(lec.cats[lecCat].videos);
+  const seen = new Set();
+  renderLectures(lec.cats.flatMap(c => c.videos).filter(v => !seen.has(v.id) && seen.add(v.id) && norm(v.t + ' ' + v.c).includes(q)));
+};
+
+// ---------- hadith ----------
+const BOOKS = [
+  ['nawawi', 'الأربعون النووية'], ['qudsi', 'الأحاديث القدسية'], ['bukhari', 'صحيح البخاري'], ['muslim', 'صحيح مسلم'],
+  ['abudawud', 'سنن أبي داود'], ['tirmidhi', 'جامع الترمذي'], ['nasai', 'سنن النسائي'], ['ibnmajah', 'سنن ابن ماجه'],
+  ['malik', 'موطأ مالك'], ['dehlawi', 'الأربعون للدهلوي'],
+];
+let hInfo = null, hCache = {}, hShown = [], hPos = 0;
+$('book').innerHTML = BOOKS.map(([k, n]) => `<option value="${k}">${n}</option>`).join('');
+inits.hadith = async () => {
+  if (hInfo) return;
+  $('hList').innerHTML = '<p class="note">جاري التحميل...</p>';
+  try { hInfo = await (await fetch('hadith-books.json')).json(); }
+  catch { $('hList').innerHTML = '<p class="note">تعذّر تحميل كتب الحديث.</p>'; return; }
+  showDaily(); fillSections();
+};
+function fillSections() {
+  const secs = hInfo[$('book').value];
+  const ids = Object.keys(secs);
+  $('section').innerHTML = ids.map(k => `<option value="${k}">الكتاب ${k}${secs[k] ? ' — ' + esc(secs[k]) : ''}</option>`).join('');
+  $('section').classList.toggle('hide', ids.length < 2);
+  loadSection();
+}
+async function loadSection() {
+  const b = $('book').value, s = $('section').value || '1', key = b + '/' + s;
+  $('hList').innerHTML = '<p class="note">جاري التحميل...</p>';
+  try {
+    hCache[key] ??= (await (await fetch(`${HADITH}editions/ara-${b}/sections/${s}.min.json`)).json()).hadiths;
+  } catch { $('hList').innerHTML = '<p class="note">تعذّر تحميل الأحاديث.</p>'; return; }
+  filterHadith();
+}
+function filterHadith() {
+  const all = hCache[$('book').value + '/' + ($('section').value || '1')] || [];
+  const q = norm($('hq').value.trim());
+  hShown = all.filter(h => h.text && (!q || norm(h.text).includes(q)));
+  hPos = 0; $('hList').innerHTML = '';
+  if (!hShown.length) $('hList').innerHTML = '<p class="note">لا توجد أحاديث مطابقة.</p>';
+  moreHadith();
+}
+function hadithCard(h, book) {
+  const d = document.createElement('div'); d.className = 'hadith';
+  const g = (h.grades || []).find(x => x.grade);
+  d.innerHTML = `<p>${esc(h.text)}</p><div class="meta"><span>${esc(book)} — رقم ${h.arabicnumber || h.hadithnumber}</span>${g ? `<span class="grade">${esc(g.grade)} (${esc(g.name)})</span>` : ''}</div>`;
+  return d;
+}
+function moreHadith() {
+  const book = BOOKS.find(x => x[0] === $('book').value)[1];
+  hShown.slice(hPos, hPos + 30).forEach(h => $('hList').append(hadithCard(h, book)));
+  hPos += 30;
+  $('hMore').classList.toggle('hide', hPos >= hShown.length);
+}
+$('book').onchange = fillSections;
+$('section').onchange = loadSection;
+$('hq').oninput = filterHadith;
+$('hMore').onclick = moreHadith;
+// one hadith from the Forty Nawawi per day, the same for everyone that day
+async function showDaily() {
+  try {
+    hCache['nawawi/1'] ??= (await (await fetch(HADITH + 'editions/ara-nawawi/sections/1.min.json')).json()).hadiths;
+    const list = hCache['nawawi/1'].filter(h => h.text);
+    const h = list[Math.floor(Date.now() / 864e5) % list.length];
+    const d = hadithCard(h, 'الأربعون النووية');
+    $('daily').innerHTML = '<h2>حديث اليوم</h2>' + d.innerHTML;
+  } catch { $('daily').classList.add('hide'); }
+}
+
+// ---------- favourites ----------
+inits.fav = () => {
+  const l = $('favList'); l.innerHTML = '';
+  if (!favs.length) { l.innerHTML = '<p class="note">اضغط ☆ بجانب أي إذاعة أو سورة لإضافتها هنا.</p>'; return; }
+  favs.forEach((f, i) => l.append(row({ n: f.kind === 'radio' ? '📻' : '📖', title: f.title, url: f.url, fav: f, onclick: () => playAudio(favs, i) })));
+};
+
+initTV();
+const startTab = store.get('tab', 'tv');
+if (startTab !== 'tv') document.querySelector(`#tabs button[data-tab="${startTab}"]`)?.click();
+</script>
+</body>
+</html>

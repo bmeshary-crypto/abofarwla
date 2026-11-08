@@ -4,11 +4,29 @@ android {
     namespace 'io.github.bmesharycrypto.abofarwla'
     compileSdk 34
     defaultConfig {
-        applicationId 'io.github.bmesharycrypto.abofarwla'
         minSdk 24
         targetSdk 34
-        versionCode 2
-        versionName '1.1'
+        versionCode 3
+        versionName '1.2'
+    }
+    buildFeatures { buildConfig true }
+    // one shell, two apps: each flavor loads its own site
+    flavorDimensions 'app'
+    productFlavors {
+        abofarwla {
+            dimension 'app'
+            applicationId 'io.github.bmesharycrypto.abofarwla'
+            buildConfigField 'String', 'SITE', '"https://bmeshary-crypto.github.io/abofarwla/"'
+            buildConfigField 'String', 'UA_TAG', '"AbuFarawlaApp"'
+            resValue 'string', 'app_name', 'أبو فراولة TV'
+        }
+        quran {
+            dimension 'app'
+            applicationId 'io.github.bmesharycrypto.quransunnah'
+            buildConfigField 'String', 'SITE', '"https://bmeshary-crypto.github.io/abofarwla/quran/"'
+            buildConfigField 'String', 'UA_TAG', '"QuranSunnahApp"'
+            resValue 'string', 'app_name', 'القرآن والسنة TV'
+        }
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17

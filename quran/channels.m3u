@@ -1,0 +1,33 @@
+#EXTM3U
+#EXTINF:-1 tvg-logo="https://i.imgur.com/A2fJysM.png" group-title="قرآن",قناة القرآن الكريم (السعودية)
+https://cdn-globecast.akamaized.net/live/eds/saudi_quran/hls_roku/index.m3u8
+#EXTINF:-1 tvg-logo="https://i.imgur.com/S6LcTJv.png" group-title="سنة",قناة السنة النبوية (السعودية)
+https://cdn-globecast.akamaized.net/live/eds/saudi_sunnah/hls_roku/index.m3u8
+#EXTINF:-1 tvg-logo="https://i.imgur.com/ut0kr4x.png" group-title="إذاعة",إذاعة القرآن الكريم السعودية (بث مرئي)
+https://live.kwikmotion.com/sbrksaquranradiolive/srpksaquranradio/playlist.m3u8
+#EXTINF:-1 tvg-logo="https://i.imgur.com/HPVsIa4.png" group-title="قرآن",اقرأ للقرآن الكريم
+https://playlist.fasttvcdn.com/pl/dlkqw1ftuvuuzkcb4pxdcg/Iqraafasttv2/playlist.m3u8
+#EXTINF:-1 tvg-logo="https://i.imgur.com/HPVsIa4.png" group-title="دعوية",قناة اقرأ
+https://playlist.fasttvcdn.com/pl/dlkqw1ftuvuuzkcb4pxdcg/Iqraafasttv3/playlist.m3u8
+#EXTINF:-1 tvg-logo="https://i.imgur.com/JBelAQj.png" group-title="قرآن",المجد للقرآن الكريم
+https://edge66.magictvbox.com/liveApple/al_majd/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-logo="https://i.imgur.com/7o4HgrP.png" group-title="دعوية",قناة الرسالة
+https://rotana.hibridcdn.net/rotananet/risala_net-7Y83PP5adWixDF93/playlist.m3u8
+#EXTINF:-1 tvg-logo="https://i.imgur.com/PRPcOi0.png" group-title="دعوية",قناة مكة
+https://media2.streambrothers.com:1936/8122/8122/playlist.m3u8
+#EXTINF:-1 tvg-logo="https://i.imgur.com/MxZlOvc.png" group-title="إذاعة",إذاعة الشارقة للقرآن (بث مرئي)
+https://live.kwikmotion.com/smcquranlive/quranradiolive/playlist.m3u8
+#EXTINF:-1 tvg-logo="https://i.imgur.com/er5hOK4.png" group-title="قرآن",قناة البحرين للقرآن
+https://5c7b683162943.streamlock.net/live/ngrp:bahrainquran_all/playlist.m3u8
+#EXTINF:-1 tvg-logo="https://i.imgur.com/nUlZvSe.png" group-title="دعوية",اقرأ أفريقيا وأوروبا
+https://playlist.fasttvcdn.com/pl/dlkqw1ftuvuuzkcb4pxdcg/Iqraafasttv1/playlist.m3u8
+#EXTINF:-1 tvg-logo="https://quran-radio.com/assets/images/site/quran-radio-logo-h-rtl.png" group-title="إذاعة",إذاعة القرآن الكريم – نابلس
+http://streaming.zaytonatube.com:8080/holyquran/holyquran/video.m3u8
+#EXTINF:-1 tvg-logo="https://i.imgur.com/K2Snk2T.png" group-title="سنة",Sunna TV
+https://viewmedia7219.bozztv.com/wmedia/viewmedia100/web_015/Stream/playlist.m3u8
+#EXTINF:-1 tvg-logo="https://i.imgur.com/lqVwrAF.png" group-title="قرآن",Alquran TV
+https://ktvlive.online/stream/hls/ch1.m3u8
+#EXTINF:-1 tvg-logo="https://i.imgur.com/nc7X3Ux.png" group-title="قرآن",Quran TV
+http://103.250.28.74:8000/play/a03e/index.m3u8
+#EXTINF:-1 tvg-logo="https://i.imgur.com/1UUjU26.png" group-title="دعوية",Huda TV (إنجليزي)
+https://cdn.bestream.io:19360/elfaro1/elfaro1.m3u8

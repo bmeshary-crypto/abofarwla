@@ -3,7 +3,8 @@
 // window allows both and otherwise just shows the live site.
 const { app, BrowserWindow, session, shell } = require('electron');
 
-const SITE = 'https://bmeshary-crypto.github.io/abofarwla/';
+// the same shell builds both apps; package.json (or the build's extraMetadata) names the site
+const { siteUrl: SITE, appTag, appIcon } = require('./package.json');
 
 app.whenReady().then(() => {
   session.defaultSession.webRequest.onHeadersReceived((d, cb) => {
@@ -14,11 +15,10 @@ app.whenReady().then(() => {
   });
 
   const win = new BrowserWindow({
-    width: 1280, height: 800, icon: __dirname + '/icon.png', autoHideMenuBar: true,
-    title: 'أبو فراولة TV',
+    width: 1280, height: 800, icon: __dirname + '/' + appIcon, autoHideMenuBar: true,
     webPreferences: { allowRunningInsecureContent: true }
   });
-  win.webContents.setUserAgent(win.webContents.getUserAgent() + ' AbuFarawlaApp');
+  win.webContents.setUserAgent(win.webContents.getUserAgent() + ' ' + appTag);
   win.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
   win.loadURL(SITE);
 });

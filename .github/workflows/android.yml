@@ -20,12 +20,15 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - run: gradle assembleDebug
+      - run: gradle assembleAbofarwlaDebug assembleQuranDebug
         working-directory: android
       - name: Upload to the app release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk AbuFarawla-TV.apk
+          cp android/app/build/outputs/apk/abofarwla/debug/app-abofarwla-debug.apk AbuFarawla-TV.apk
+          cp android/app/build/outputs/apk/quran/debug/app-quran-debug.apk QuranSunnah-TV.apk
           gh release view app >/dev/null 2>&1 || gh release create app --title "تطبيق أبو فراولة TV" --notes "ويندوز وأندرويد"
           gh release upload app AbuFarawla-TV.apk --clobber
+          gh release view quran >/dev/null 2>&1 || gh release create quran --title "تطبيق القرآن والسنة TV" --notes "ويندوز وأندرويد"
+          gh release upload quran QuranSunnah-TV.apk --clobber
