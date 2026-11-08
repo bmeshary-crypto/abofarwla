@@ -1,6 +1,6 @@
 // Builds yt.json (full-length YouTube movies per category) so visitors need no API key.
 // Runs daily from GitHub Actions with the key stored in the YT_API_KEY secret.
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 
 const KEY = process.env.YT_API_KEY;
 if (!KEY) { console.error('YT_API_KEY is not set'); process.exit(1); }
@@ -40,8 +40,25 @@ const api = async (path, params) => {
   return j;
 };
 
+// when the daily quota runs out, categories not fetched today keep yesterday's films
+let previous = [];
+try { previous = JSON.parse(readFileSync('yt.json', 'utf8')).cats; } catch {}
+let quotaHit = false;
+
 const out = { updated: new Date().toISOString(), cats: [] };
 for (const [name, q] of CATS) {
+  if (quotaHit) { keepPrevious(name); continue; }
+  try { out.cats.push({ name, films: await fetchCategory(q) }); console.log(name, out.cats.at(-1).films.length); }
+  catch (e) { console.warn(`${name}: ${e.message} — keeping previous list`); quotaHit = /(403|429)/.test(e.message); keepPrevious(name); }
+}
+writeFileSync('yt.json', JSON.stringify(out));
+
+function keepPrevious(name) {
+  const old = previous.find(c => c.name === name);
+  if (old) out.cats.push(old);
+}
+
+async function fetchCategory(q) {
   const items = []; let pageToken = '';
   for (let p = 0; p < PAGES; p++) {
     const s = await api('search', {
@@ -61,7 +78,5 @@ for (const [name, q] of CATS) {
     .filter(i => !seen.has(i.id.videoId) && seen.add(i.id.videoId))
     .map(i => ({ id: i.id.videoId, t: i.snippet.title, c: i.snippet.channelTitle, d: dur[i.id.videoId] || '' }))
     .filter(f => f.d && !BLOCK.test(f.t) && !/مسلسل|الحلقة|حلقة|episode/i.test(f.t));
-  out.cats.push({ name, films });
-  console.log(name, films.length);
+  return films;
 }
-writeFileSync('yt.json', JSON.stringify(out));
