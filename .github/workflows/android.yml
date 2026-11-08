@@ -1,0 +1,31 @@
+name: Build Android app
+
+on:
+  push:
+    paths: ['android/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - run: gradle assembleDebug
+        working-directory: android
+      - name: Upload to the app release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk AbuFarawla-TV.apk
+          gh release view app >/dev/null 2>&1 || gh release create app --title "تطبيق أبو فراولة TV" --notes "ويندوز وأندرويد"
+          gh release upload app AbuFarawla-TV.apk --clobber

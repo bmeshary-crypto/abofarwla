@@ -11,10 +11,21 @@
   },
   "build": {
     "appId": "io.github.bmeshary-crypto.abofarwla",
-    "artifactName": "AbuFarawla-TV-${version}-${target}.${ext}",
-    "files": ["main.js", "icon.png"],
-    "win": { "icon": "icon.png" },
-    "nsis": { "oneClick": true }
+    "files": [
+      "main.js",
+      "icon.png"
+    ],
+    "win": {
+      "icon": "icon.png",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": true,
+      "artifactName": "AbuFarawla-TV-Setup.exe"
+    },
+    "portable": {
+      "artifactName": "AbuFarawla-TV-portable.exe"
+    }
   },
   "devDependencies": {
     "electron": "33.2.1",
