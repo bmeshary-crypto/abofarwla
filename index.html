@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0f1115">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>شاشتي</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js"
+        onerror="var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js';document.head.appendChild(s)"></script>
+<style>
+:root{--bg:#0f1115;--card:#181b22;--card2:#20242d;--fg:#e9ecf1;--mut:#9aa3b2;--acc:#3ea6ff;--bad:#ff6b6b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:"Segoe UI",Tahoma,system-ui,sans-serif}
+header{display:flex;align-items:center;gap:12px;padding:10px 16px;background:#0b0d11;border-bottom:1px solid #222}
+header h1{font-size:20px;margin:0;color:var(--acc)}
+nav{display:flex;gap:6px;flex-wrap:wrap}
+nav button,.chip{background:var(--card2);color:var(--fg);border:1px solid #2c313c;border-radius:20px;padding:7px 14px;cursor:pointer;font:inherit;font-size:14px}
+nav button.on,.chip.on{background:var(--acc);color:#001;border-color:var(--acc)}
+#player{position:sticky;top:0;z-index:5;background:#000}
+#player video{width:100%;max-height:62vh;display:block;background:#000}
+#bar{display:flex;align-items:center;gap:10px;padding:6px 12px;background:#0b0d11;font-size:14px;flex-wrap:wrap}
+#now{font-weight:600}
+#msg{color:var(--mut);flex:1}
+#msg.bad{color:var(--bad)}
+select,input[type=text],input[type=url]{background:var(--card2);color:var(--fg);border:1px solid #2c313c;border-radius:8px;padding:8px 10px;font:inherit;font-size:14px}
+main{padding:12px 16px}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.tools input[type=text],.tools input[type=url]{flex:1;min-width:180px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.item{background:var(--card);border-radius:10px;padding:8px;cursor:pointer;position:relative;display:flex;flex-direction:column;gap:6px;border:1px solid transparent}
+.item:hover{border-color:var(--acc)}
+a.item{color:inherit;text-decoration:none}
+.item img{width:100%;aspect-ratio:16/10;object-fit:contain;background:#0b0d11;border-radius:6px}
+.item.movie img{aspect-ratio:2/3;object-fit:cover}
+.item .t{font-size:13px;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.item .g{font-size:11px;color:var(--mut)}
+.fav{position:absolute;top:6px;left:6px;background:#000a;border:0;color:#ffd54a;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px}
+.more{display:block;margin:14px auto;padding:10px 24px}
+.note{color:var(--mut);font-size:13px;line-height:1.7}
+.hide{display:none}
+button.btn{background:var(--acc);color:#001;border:0;border-radius:8px;padding:8px 16px;cursor:pointer;font:inherit;font-size:14px}
+@media (max-width:600px){header{flex-direction:column;align-items:stretch}.grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}}
+</style>
+</head>
+<body>
+<header>
+  <h1>📺 شاشتي</h1>
+  <nav id="tabs">
+    <button data-tab="tv" class="on">القنوات المجانية</button>
+    <button data-tab="movies">أفلام مجانية</button>
+    <button data-tab="fav">المفضلة</button>
+    <button data-tab="custom">رابط / قائمة خاصة</button>
+    <button data-tab="local">ملفات جهازي</button>
+    <button data-tab="apps">تطبيقات رسمية</button>
+  </nav>
+</header>
+
+<div id="player" class="hide">
+  <video id="video" controls playsinline></video>
+  <div id="bar">
+    <span id="now"></span>
+    <span id="msg"></span>
+    <select id="quality" class="hide" title="الجودة"></select>
+    <button class="btn" id="close">إغلاق</button>
+  </div>
+</div>
+
+<main>
+  <!-- TV -->
+  <section id="tab-tv">
+    <div class="tools">
+      <select id="src"></select>
+      <select id="group"><option value="">كل التصنيفات</option></select>
+      <input type="text" id="q" placeholder="ابحث عن قناة...">
+    </div>
+    <div id="tvGrid" class="grid"></div>
+    <button class="chip more hide" id="tvMore">عرض المزيد</button>
+  </section>
+
+  <!-- Movies -->
+  <section id="tab-movies" class="hide">
+    <div class="tools">
+      <input type="text" id="mq" placeholder="ابحث عن فيلم (بالإنجليزي)...">
+      <button class="btn" id="mgo">بحث</button>
+    </div>
+    <div class="tools" id="mchips"></div>
+    <p class="note">أفلام كاملة مجانية وقانونية من أرشيف الإنترنت (Internet Archive) — معظمها أفلام كلاسيكية أصبحت ملكية عامة.</p>
+    <div id="mGrid" class="grid"></div>
+    <button class="chip more hide" id="mMore">عرض المزيد</button>
+  </section>
+
+  <!-- Favorites -->
+  <section id="tab-fav" class="hide">
+    <div id="favGrid" class="grid"></div>
+    <p class="note" id="favEmpty">اضغط ☆ على أي قناة لإضافتها هنا.</p>
+  </section>
+
+  <!-- Custom -->
+  <section id="tab-custom" class="hide">
+    <p class="note">إذا عندك اشتراك قانوني أو قائمة M3U من مزوّد الخدمة، ضع الرابط هنا. أو ضع رابط بث مباشر (.m3u8 / .mp4) لتشغيله فورًا.</p>
+    <div class="tools">
+      <input type="url" id="curl" placeholder="https://.../playlist.m3u  أو  https://.../stream.m3u8">
+      <button class="btn" id="cgo">فتح</button>
+    </div>
+    <div class="tools"><label class="note">أو افتح ملف M3U من جهازك: <input type="file" id="cfile" accept=".m3u,.m3u8,audio/x-mpegurl"></label></div>
+  </section>
+
+  <!-- Local -->
+  <section id="tab-local" class="hide">
+    <p class="note">شغّل أفلامك المحفوظة على الجهاز (MP4 / WebM / MKV حسب دعم المتصفح).</p>
+    <div class="tools"><input type="file" id="lfile" accept="video/*,.mkv" multiple></div>
+    <div id="lGrid" class="grid"></div>
+  </section>
+
+  <!-- Official apps -->
+  <section id="tab-apps" class="hide">
+    <p class="note">هذه خدمات رسمية محمية بحقوق، تُفتح في موقعها أو تطبيقها. بعضها مجاني بإعلانات وبعضها باشتراك، وتوفرها يختلف حسب الدولة.</p>
+    <div class="grid">
+      <a class="item" href="https://shahid.mbc.net" target="_blank" rel="noopener"><div class="t">شاهد</div><div class="g">أفلام ومسلسلات عربية — جزء مجاني</div></a>
+      <a class="item" href="https://www.tod.tv" target="_blank" rel="noopener"><div class="t">TOD</div><div class="g">beIN Sports ومباريات — باشتراك</div></a>
+      <a class="item" href="https://pluto.tv" target="_blank" rel="noopener"><div class="t">Pluto TV</div><div class="g">قنوات وأفلام أجنبية — مجاني بإعلانات</div></a>
+      <a class="item" href="https://tubitv.com" target="_blank" rel="noopener"><div class="t">Tubi</div><div class="g">أفلام أجنبية كاملة — مجاني بإعلانات</div></a>
+      <a class="item" href="https://www.samsung.com/us/tvplus/" target="_blank" rel="noopener"><div class="t">Samsung TV Plus</div><div class="g">قنوات مجانية بإعلانات</div></a>
+      <a class="item" href="https://watch.plex.tv" target="_blank" rel="noopener"><div class="t">Plex</div><div class="g">أفلام وقنوات مجانية بإعلانات</div></a>
+      <a class="item" href="https://www.youtube.com/results?search_query=%D9%81%D9%8A%D9%84%D9%85+%D8%B9%D8%B1%D8%A8%D9%8A+%D9%83%D8%A7%D9%85%D9%84+%D8%B1%D9%88%D8%AA%D8%A7%D9%86%D8%A7" target="_blank" rel="noopener"><div class="t">أفلام عربية على يوتيوب</div><div class="g">من قنوات المنتجين الرسمية</div></a>
+    </div>
+  </section>
+</main>
+
+<script>
+const IPTV = 'https://iptv-org.github.io/iptv/';
+// [label, playlist (relative to IPTV or absolute), optional group to pre-select]
+const SOURCES = [
+  ['القنوات العربية', 'languages/ara.m3u'],
+  ['🎬 قنوات أفلام عربية وأجنبية 24 ساعة', 'languages/ara.m3u', 'Movies'],
+  ['Free-TV (قائمة مختارة عالمية)', 'https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8'],
+  ['السعودية', 'countries/sa.m3u'],
+  ['مصر', 'countries/eg.m3u'],
+  ['الإمارات', 'countries/ae.m3u'],
+  ['الكويت', 'countries/kw.m3u'],
+  ['قطر', 'countries/qa.m3u'],
+  ['المغرب', 'countries/ma.m3u'],
+  ['أخبار (عالمي)', 'categories/news.m3u'],
+  ['رياضة (عالمي)', 'categories/sports.m3u'],
+  ['أفلام (عالمي)', 'categories/movies.m3u'],
+  ['أطفال (عالمي)', 'categories/kids.m3u'],
+  ['وثائقي (عالمي)', 'categories/documentary.m3u'],
+  ['دينية', 'categories/religious.m3u'],
+  ['أمريكا (فيها قنوات Pluto TV المجانية)', 'countries/us.m3u'],
+  ['بريطانيا', 'countries/uk.m3u'],
+  ['قنوات بالإنجليزي', 'languages/eng.m3u'],
+  ['كل قنوات العالم (كبير)', 'index.m3u'],
+];
+const MOVIE_CHIPS = [
+  ['الأكثر مشاهدة', ''], ['أكشن', 'subject:(action)'], ['كوميدي', 'subject:(comedy)'],
+  ['رعب', 'subject:(horror)'], ['خيال علمي', 'subject:(science fiction)'], ['غموض', 'subject:(film noir)'],
+  ['ويسترن', 'subject:(western)'], ['دراما', 'subject:(drama)'], ['رسوم متحركة', 'collection:(animationandcartoons)'],
+];
+const PAGE = 120;
+const $ = id => document.getElementById(id);
+const video = $('video');
+const cache = {};
+let channels = [], shown = PAGE, hls = null;
+
+// ---------- storage ----------
+const store = {
+  get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+let favs = store.get('favs', []);
+
+// ---------- tabs ----------
+$('tabs').onclick = e => {
+  const t = e.target.dataset.tab; if (!t) return;
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  document.querySelectorAll('main > section').forEach(s => s.classList.toggle('hide', s.id !== 'tab-' + t));
+  if (t === 'fav') renderFavs();
+  if (t === 'movies' && !$('mGrid').children.length) searchMovies();
+  store.set('tab', t);
+};
+
+// ---------- player ----------
+function msg(t, bad) { $('msg').textContent = t || ''; $('msg').classList.toggle('bad', !!bad); }
+
+function play(url, title) {
+  if (hls) { hls.destroy(); hls = null; }
+  video.removeAttribute('src'); video.load();
+  $('quality').classList.add('hide');
+  $('player').classList.remove('hide');
+  $('now').textContent = title || '';
+  msg('جاري التشغيل...');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  const isHls = /m3u8/i.test(url);
+  if (isHls && window.Hls && Hls.isSupported()) {
+    hls = new Hls({ enableWorker: true, capLevelToPlayerSize: false });
+    hls.loadSource(url);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => { buildQuality(); video.play().catch(() => {}); });
+    hls.on(Hls.Events.ERROR, (_, d) => {
+      if (d.fatal) msg('تعذّر تشغيل هذه القناة — قد تكون متوقفة حاليًا أو محجوبة في بلدك.', true);
+    });
+  } else {
+    video.src = url;
+    video.play().catch(() => {});
+  }
+}
+video.onplaying = () => msg('');
+video.onwaiting = () => msg('تحميل...');
+video.onerror = () => { if (!hls) msg('تعذّر تشغيل هذا الرابط.', true); };
+$('close').onclick = () => {
+  if (hls) { hls.destroy(); hls = null; }
+  video.pause(); video.removeAttribute('src'); video.load();
+  $('player').classList.add('hide');
+};
+
+function buildQuality() {
+  const sel = $('quality');
+  if (!hls || hls.levels.length < 2) return;
+  const opts = [`<option value="-1">جودة تلقائية</option>`];
+  hls.levels.forEach((l, i) => opts.push(`<option value="${i}">${l.height ? l.height + 'p' : Math.round(l.bitrate / 1000) + 'kbps'}</option>`));
+  sel.innerHTML = opts.join('');
+  // start at the highest quality available
+  const top = hls.levels.length - 1;
+  hls.currentLevel = top; sel.value = top;
+  sel.classList.remove('hide');
+}
+$('quality').onchange = e => { if (hls) hls.currentLevel = +e.target.value; };
+
+// ---------- M3U ----------
+function parseM3U(text) {
+  const out = []; let cur = null;
+  for (const raw of text.split(/\r?\n/)) {
+    const l = raw.trim(); if (!l) continue;
+    if (l.startsWith('#EXTINF')) {
+      const attr = k => (l.match(new RegExp(k + '="([^"]*)"')) || [])[1] || '';
+      const name = l.slice(l.indexOf(',', l.lastIndexOf('"') + 1) + 1).trim();
+      cur = { name: name || 'قناة', logo: attr('tvg-logo'), group: (attr('group-title') || '').split(';')[0] };
+    } else if (!l.startsWith('#')) {
+      out.push({ ...(cur || { name: l, logo: '', group: '' }), url: l });
+      cur = null;
+    }
+  }
+  return out;
+}
+
+function loadSource(i) {
+  const [, p, group] = SOURCES[i] || SOURCES[0];
+  loadList(/^https?:/.test(p) ? p : IPTV + p, group);
+}
+
+async function loadList(url, group) {
+  $('tvGrid').innerHTML = '<p class="note">جاري تحميل القنوات...</p>';
+  try {
+    if (!cache[url]) {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error(r.status);
+      cache[url] = parseM3U(await r.text());
+    }
+    setChannels(cache[url]);
+    if (group) { $('group').value = group; renderTV(); }
+  } catch (e) {
+    $('tvGrid').innerHTML = '<p class="note">تعذّر تحميل القائمة. تأكد من الاتصال بالإنترنت ثم حاول مرة أخرى.</p>';
+  }
+}
+
+function setChannels(list) {
+  channels = list; shown = PAGE;
+  const groups = [...new Set(list.map(c => c.group).filter(Boolean))].sort();
+  $('group').innerHTML = '<option value="">كل التصنيفات</option>' + groups.map(g => `<option>${esc(g)}</option>`).join('');
+  renderTV();
+}
+
+function filtered() {
+  const q = $('q').value.trim().toLowerCase(), g = $('group').value;
+  return channels.filter(c => (!g || c.group === g) && (!q || c.name.toLowerCase().includes(q)));
+}
+
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+const PH = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 10"><text x="8" y="7" font-size="5" text-anchor="middle">📺</text></svg>');
+
+function card(c) {
+  const isFav = favs.some(f => f.url === c.url);
+  const el = document.createElement('div');
+  el.className = 'item';
+  el.innerHTML = `<button class="fav" title="المفضلة">${isFav ? '★' : '☆'}</button>
+    <img loading="lazy" src="${esc(c.logo || PH)}" onerror="this.src='${PH}'" alt="">
+    <div class="t">${esc(c.name)}</div><div class="g">${esc(c.group || '')}</div>`;
+  el.onclick = e => {
+    if (e.target.classList.contains('fav')) {
+      e.stopPropagation();
+      const i = favs.findIndex(f => f.url === c.url);
+      if (i >= 0) favs.splice(i, 1); else favs.push(c);
+      store.set('favs', favs);
+      e.target.textContent = i >= 0 ? '☆' : '★';
+      if (!$('tab-fav').classList.contains('hide')) renderFavs();
+      return;
+    }
+    play(c.url, c.name);
+  };
+  return el;
+}
+
+function renderTV() {
+  const list = filtered(), grid = $('tvGrid');
+  grid.innerHTML = '';
+  if (!list.length) grid.innerHTML = '<p class="note">لا توجد نتائج.</p>';
+  list.slice(0, shown).forEach(c => grid.appendChild(card(c)));
+  $('tvMore').classList.toggle('hide', list.length <= shown);
+  $('tvMore').textContent = `عرض المزيد (${list.length - shown} متبقية)`;
+}
+$('tvMore').onclick = () => { shown += PAGE; renderTV(); };
+$('q').oninput = () => { shown = PAGE; renderTV(); };
+$('group').onchange = () => { shown = PAGE; renderTV(); };
+
+$('src').innerHTML = SOURCES.map(([n], i) => `<option value="${i}">${n}</option>`).join('');
+$('src').value = String(store.get('src2', 0));
+if (!$('src').value) $('src').value = '0';
+$('src').onchange = () => { store.set('src2', +$('src').value); $('q').value = ''; loadSource(+$('src').value); };
+
+function renderFavs() {
+  const g = $('favGrid'); g.innerHTML = '';
+  favs.forEach(c => g.appendChild(card(c)));
+  $('favEmpty').classList.toggle('hide', favs.length > 0);
+}
+
+// ---------- movies (Internet Archive) ----------
+let mQuery = '', mPage = 1;
+$('mchips').innerHTML = MOVIE_CHIPS.map(([n, q], i) => `<button class="chip${i ? '' : ' on'}" data-q="${esc(q)}">${n}</button>`).join('');
+$('mchips').onclick = e => {
+  if (!e.target.dataset || e.target.dataset.q === undefined) return;
+  document.querySelectorAll('#mchips .chip').forEach(b => b.classList.toggle('on', b === e.target));
+  $('mq').value = '';
+  searchMovies(e.target.dataset.q);
+};
+$('mgo').onclick = () => {
+  const t = $('mq').value.trim().replace(/[():"\\]/g, ' ');
+  searchMovies(t ? `title:(${t})` : '');
+};
+$('mq').onkeydown = e => { if (e.key === 'Enter') $('mgo').click(); };
+$('mMore').onclick = () => searchMovies(mQuery, mPage + 1);
+
+async function searchMovies(extra = '', page = 1) {
+  mQuery = extra; mPage = page;
+  const base = extra.startsWith('collection:') ? `${extra} AND mediatype:(movies)` : 'collection:(feature_films) AND mediatype:(movies)' + (extra ? ` AND ${extra}` : '');
+  // only items that have a browser-playable MP4
+  const url = 'https://archive.org/advancedsearch.php?q=' + encodeURIComponent(base + ' AND format:("h.264" OR "MPEG4" OR "h.264 HD")') +
+    '&fl[]=identifier&fl[]=title&fl[]=year&sort[]=downloads+desc&rows=60&page=' + page + '&output=json';
+  if (page === 1) $('mGrid').innerHTML = '<p class="note">جاري البحث...</p>';
+  try {
+    const j = await (await fetch(url)).json();
+    const docs = j.response.docs;
+    if (page === 1) $('mGrid').innerHTML = docs.length ? '' : '<p class="note">لا توجد نتائج.</p>';
+    docs.forEach(d => {
+      const el = document.createElement('div');
+      el.className = 'item movie';
+      el.innerHTML = `<img loading="lazy" src="https://archive.org/services/img/${encodeURIComponent(d.identifier)}" alt="">
+        <div class="t">${esc(d.title || d.identifier)}</div><div class="g">${esc(d.year || '')}</div>`;
+      el.onclick = () => playMovie(d.identifier, d.title);
+      $('mGrid').appendChild(el);
+    });
+    $('mMore').classList.toggle('hide', page * 60 >= j.response.numFound);
+  } catch {
+    $('mGrid').innerHTML = '<p class="note">تعذّر الاتصال بأرشيف الأفلام.</p>';
+  }
+}
+
+async function playMovie(id, title) {
+  $('player').classList.remove('hide'); $('now').textContent = title; msg('جاري تجهيز الفيلم...');
+  try {
+    const m = await (await fetch('https://archive.org/metadata/' + encodeURIComponent(id))).json();
+    const vids = (m.files || []).filter(f => /\.(mp4|m4v|webm)$/i.test(f.name));
+    if (!vids.length) return msg('لا توجد نسخة قابلة للتشغيل لهذا الفيلم.', true);
+    // highest quality = largest file, preferring mp4
+    vids.sort((a, b) => (/\.mp4$/i.test(b.name) - /\.mp4$/i.test(a.name)) || ((+b.size || 0) - (+a.size || 0)));
+    const path = vids[0].name.split('/').map(encodeURIComponent).join('/');
+    play(`https://archive.org/download/${encodeURIComponent(id)}/${path}`, title);
+  } catch {
+    msg('تعذّر تحميل بيانات الفيلم.', true);
+  }
+}
+
+// ---------- custom ----------
+$('cgo').onclick = async () => {
+  const u = $('curl').value.trim(); if (!u) return;
+  if (/\.(m3u8|mp4|webm|mkv)(\?|$)/i.test(u) && !/\.m3u(\?|$)/i.test(u)) return play(u, 'رابط مباشر');
+  try {
+    const t = await (await fetch(u)).text();
+    if (!t.includes('#EXTM3U') && !t.includes('#EXTINF')) return play(u, 'رابط مباشر');
+    switchTo('tv'); setChannels(parseM3U(t));
+  } catch {
+    play(u, 'رابط مباشر');
+  }
+};
+$('cfile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  switchTo('tv'); setChannels(parseM3U(await f.text()));
+};
+function switchTo(t) { document.querySelector(`#tabs button[data-tab="${t}"]`).click(); }
+
+// ---------- local files ----------
+$('lfile').onchange = e => {
+  const g = $('lGrid'); g.innerHTML = '';
+  [...e.target.files].forEach(f => {
+    const el = document.createElement('div');
+    el.className = 'item';
+    el.innerHTML = `<img src="${PH}" alt=""><div class="t">${esc(f.name)}</div><div class="g">${(f.size / 1e9).toFixed(2)} GB</div>`;
+    el.onclick = () => play(URL.createObjectURL(f), f.name);
+    g.appendChild(el);
+  });
+};
+
+// ---------- start ----------
+loadSource(+$('src').value);
+const lastTab = store.get('tab', 'tv');
+if (lastTab !== 'tv') switchTo(lastTab);
+</script>
+</body>
+</html>
