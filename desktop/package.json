@@ -1,0 +1,23 @@
+{
+  "name": "abofarwla-tv",
+  "productName": "أبو فراولة TV",
+  "version": "1.0.0",
+  "description": "أبو فراولة TV",
+  "main": "main.js",
+  "author": "bmeshary-crypto",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable nsis --publish never"
+  },
+  "build": {
+    "appId": "io.github.bmeshary-crypto.abofarwla",
+    "artifactName": "AbuFarawla-TV-${version}-${target}.${ext}",
+    "files": ["main.js", "icon.png"],
+    "win": { "icon": "icon.png" },
+    "nsis": { "oneClick": true }
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  }
+}
