@@ -194,6 +194,7 @@ const SOURCES = [
   ['القنوات العربية', 'languages/ara.m3u'],
   ['🎬 قنوات أفلام عربية وأجنبية 24 ساعة', 'languages/ara.m3u', 'Movies'],
   ['Free-TV (قائمة مختارة عالمية)', 'https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8'],
+  ['PRIME TV (13 ألف قناة مجانية)', './prime.m3u'],
   ['السعودية', 'countries/sa.m3u'],
   ['مصر', 'countries/eg.m3u'],
   ['الإمارات', 'countries/ae.m3u'],
@@ -350,7 +351,7 @@ function loadSource(v) {
   v = String(v);
   if (v.startsWith('u')) { const l = myLists[+v.slice(1)]; if (l) return loadList(l.url); v = '0'; }
   const [, p, group] = SOURCES[+v] || SOURCES[0];
-  loadList(/^https?:/.test(p) ? p : IPTV + p, group);
+  loadList(/^(https?:|\.\/)/.test(p) ? p : IPTV + p, group);
 }
 
 async function loadList(url, group) {
