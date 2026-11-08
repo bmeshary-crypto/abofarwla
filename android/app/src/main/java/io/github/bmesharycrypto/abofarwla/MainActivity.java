@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
@@ -28,6 +29,7 @@ public class MainActivity extends Activity {
     static final String SITE = "https://bmeshary-crypto.github.io/abofarwla/";
     WebView web;
     View fullView;
+    ValueCallback<Uri[]> pickCallback;
 
     @Override
     protected void onCreate(Bundle b) {
@@ -97,6 +99,18 @@ public class MainActivity extends Activity {
                         | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
             }
 
+            // file inputs (M3U lists, local videos) need the app to open the picker
+            @Override
+            public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> cb, FileChooserParams p) {
+                if (pickCallback != null) pickCallback.onReceiveValue(null);
+                pickCallback = cb;
+                Intent i = new Intent(Intent.ACTION_GET_CONTENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*");
+                if (p.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE) i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                try { startActivityForResult(Intent.createChooser(i, null), 1); }
+                catch (Exception e) { pickCallback = null; return false; }
+                return true;
+            }
+
             @Override
             public void onHideCustomView() {
                 if (fullView != null) ((FrameLayout) getWindow().getDecorView()).removeView(fullView);
@@ -106,6 +120,21 @@ public class MainActivity extends Activity {
         });
 
         if (b != null) web.restoreState(b); else web.loadUrl(SITE);
+    }
+
+    @Override
+    protected void onActivityResult(int req, int res, Intent data) {
+        super.onActivityResult(req, res, data);
+        if (req != 1 || pickCallback == null) return;
+        Uri[] picked = null;
+        if (res == RESULT_OK && data != null) {
+            if (data.getClipData() != null) {
+                picked = new Uri[data.getClipData().getItemCount()];
+                for (int i = 0; i < picked.length; i++) picked[i] = data.getClipData().getItemAt(i).getUri();
+            } else if (data.getData() != null) picked = new Uri[]{data.getData()};
+        }
+        pickCallback.onReceiveValue(picked);
+        pickCallback = null;
     }
 
     @Override

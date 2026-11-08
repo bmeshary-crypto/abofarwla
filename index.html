@@ -148,7 +148,7 @@ h3{font-size:16px;margin:18px 0 6px}
       <input type="url" id="curl" placeholder="https://.../playlist.m3u  أو  https://.../stream.m3u8">
       <button class="btn" id="cgo">فتح</button>
     </div>
-    <div class="tools"><label class="note">أو افتح ملف M3U من جهازك: <input type="file" id="cfile" accept=".m3u,.m3u8,audio/x-mpegurl"></label></div>
+    <div class="tools"><label class="note">أو افتح ملف M3U من جهازك: <input type="file" id="cfile"></label></div>
   </section>
 
   <!-- YouTube -->
@@ -672,7 +672,10 @@ $('cgo').onclick = async () => {
 };
 $('cfile').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
-  switchTo('tv'); setChannels(parseM3U(await f.text()));
+  e.target.value = '';   // so picking the same file again still loads it
+  const list = parseM3U(await f.text());
+  if (!list.length) return alert('لم أجد قنوات في هذا الملف. تأكد أنه ملف M3U يبدأ بـ #EXTM3U.');
+  switchTo('tv'); setChannels(list);
 };
 function switchTo(t) { document.querySelector(`#tabs button[data-tab="${t}"]`).click(); }
 
