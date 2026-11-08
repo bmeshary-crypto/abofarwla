@@ -153,8 +153,8 @@ h3{font-size:16px;margin:18px 0 6px}
   <!-- YouTube -->
   <section id="tab-yt" class="hide">
     <div id="ytSetup" class="hide">
-      <h3>تفعيل أفلام يوتيوب (مرة وحدة فقط)</h3>
-      <p class="note">البحث في يوتيوب يحتاج مفتاحًا مجانيًا من Google:</p>
+      <h3>مفتاح يوتيوب الشخصي (اختياري)</h3>
+      <p class="note">الأفلام تظهر للجميع بدون مفتاح. المفتاح الشخصي يضيف البحث المباشر في كل يوتيوب:</p>
       <ol class="note">
         <li>افتح <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener">صفحة YouTube Data API v3</a> وسجّل دخولك بحساب Google.</li>
         <li>أنشئ مشروعًا جديدًا (أي اسم)، ثم اضغط <b>Enable</b>.</li>
@@ -691,31 +691,80 @@ const isoDur = d => {
   return (h ? h + ':' + String(mi).padStart(2, '0') : mi) + ':' + String(s).padStart(2, '0');
 };
 
-function ytInit() {
-  $('ytSetup').classList.toggle('hide', !!ytKey);
-  $('ytMain').classList.toggle('hide', !ytKey);
-  if (ytKey && !$('ytGrid').children.length) ytSearch(YT_CHIPS[0][1]);
+// yt.json is rebuilt daily by a GitHub Action, so visitors browse movies without a key of their own;
+// a personal key (optional) adds live search across all of YouTube
+let ytData = null;
+
+async function ytInit() {
+  if (!ytData) {
+    try { ytData = await (await fetch('yt.json', { cache: 'no-cache' })).json(); } catch { ytData = false; }
+  }
+  const ready = !!(ytData || ytKey);
+  $('ytSetup').classList.toggle('hide', ready);
+  $('ytMain').classList.toggle('hide', !ready);
+  $('ytChangeKey').textContent = ytKey ? 'تغيير المفتاح الشخصي' : 'إضافة مفتاح شخصي (اختياري)';
+  if (!ready || $('ytGrid').children.length) return;
+  const chips = ytData ? ytData.cats.map(c => [c.name, c.name]) : YT_CHIPS;
+  $('ytChips').innerHTML = chips.map(([n, q], i) => `<button class="chip${i ? '' : ' on'}" data-q="${esc(q)}">${esc(n)}</button>`).join('');
+  ytData ? ytShowCat(chips[0][1]) : ytSearch(YT_CHIPS[0][1]);
 }
 
-$('ytChips').innerHTML = YT_CHIPS.map(([n, q], i) => `<button class="chip${i ? '' : ' on'}" data-q="${esc(q)}">${n}</button>`).join('');
+function ytCard({ id, t, c, d }) {
+  const el = document.createElement('div');
+  el.className = 'item';
+  el.innerHTML = `<img loading="lazy" src="https://i.ytimg.com/vi/${encodeURIComponent(id)}/mqdefault.jpg" alt="">
+    <div class="t">${esc(t)}</div><div class="g">${esc(c)}${d ? ' · ' + isoDur(d) : ''}</div>`;
+  el.onclick = () => playYT(id, t);
+  return el;
+}
+
+function ytShowList(films) {
+  $('ytGrid').innerHTML = films.length ? '' : '<p class="note">لا توجد نتائج.</p>';
+  films.forEach(f => $('ytGrid').appendChild(ytCard(f)));
+  $('ytMore').classList.add('hide');
+}
+
+function ytShowCat(name) {
+  const cat = ytData.cats.find(c => c.name === name);
+  ytShowList(cat ? cat.films : []);
+}
+
+// search the saved list: every word of the query must appear in the title or channel
+function ytSearchSaved(q) {
+  const words = q.toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').split(/\s+/).filter(Boolean);
+  const norm = s => s.toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه');
+  const seen = new Set();
+  ytShowList(ytData.cats.flatMap(c => c.films).filter(f => {
+    if (seen.has(f.id)) return false;
+    const text = norm(f.t + ' ' + f.c);
+    return words.every(w => text.includes(w)) && seen.add(f.id);
+  }));
+}
+
 $('ytChips').onclick = e => {
   const q = e.target.dataset && e.target.dataset.q; if (!q) return;
   document.querySelectorAll('#ytChips .chip').forEach(b => b.classList.toggle('on', b === e.target));
   $('ytQ').value = '';
-  ytSearch(q);
+  ytData ? ytShowCat(q) : ytSearch(q);
 };
 $('ytGo').onclick = () => {
   const q = $('ytQ').value.trim(); if (!q) return;
   document.querySelectorAll('#ytChips .chip').forEach(b => b.classList.remove('on'));
-  ytSearch(/فيلم|movie|film/i.test(q) ? q : q + ' فيلم كامل');
+  if (ytKey) ytSearch(/فيلم|movie|film/i.test(q) ? q : q + ' فيلم كامل');
+  else ytSearchSaved(q);
 };
 $('ytQ').onkeydown = e => { if (e.key === 'Enter') $('ytGo').click(); };
 $('ytMore').onclick = () => ytSearch(ytQuery, true);
 $('ytSaveKey').onclick = () => {
   const k = $('ytKeyIn').value.trim(); if (!k) return $('ytKeyIn').focus();
-  ytKey = k; store.set('ytKey', k); ytInit();
+  ytKey = k; store.set('ytKey', k);
+  $('ytGrid').innerHTML = ''; ytInit();
 };
-$('ytChangeKey').onclick = () => { ytKey = ''; store.set('ytKey', ''); $('ytKeyIn').value = ''; $('ytGrid').innerHTML = ''; ytInit(); };
+$('ytChangeKey').onclick = () => {
+  $('ytKeyIn').value = '';
+  $('ytSetup').classList.remove('hide');
+  $('ytKeyIn').focus();
+};
 
 async function ytSearch(q, more) {
   if (!more) { ytQuery = q; ytNext = ''; $('ytGrid').innerHTML = '<p class="note">جاري البحث...</p>'; }
