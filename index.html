@@ -6,7 +6,10 @@
 <meta name="theme-color" content="#0f1115">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>شاشتي</title>
+<title>أبو فراولة TV</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js"
         onerror="var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js';document.head.appendChild(s)"></script>
 <style>
@@ -14,7 +17,8 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:"Segoe UI",Tahoma,system-ui,sans-serif}
 header{display:flex;align-items:center;gap:12px;padding:10px 16px;background:#0b0d11;border-bottom:1px solid #222}
-header h1{font-size:20px;margin:0;color:var(--acc)}
+header h1{margin:0;display:flex;align-items:center;gap:10px;font-size:20px;color:var(--fg)}
+header h1 img{height:52px;width:auto;background:#fff;border-radius:12px;padding:3px}
 nav{display:flex;gap:6px;flex-wrap:wrap}
 nav button,.chip{background:var(--card2);color:var(--fg);border:1px solid #2c313c;border-radius:20px;padding:7px 14px;cursor:pointer;font:inherit;font-size:14px}
 nav button.on,.chip.on{background:var(--acc);color:#001;border-color:var(--acc)}
@@ -46,7 +50,7 @@ button.btn{background:var(--acc);color:#001;border:0;border-radius:8px;padding:8
 </head>
 <body>
 <header>
-  <h1>📺 شاشتي</h1>
+  <h1><img src="logo.jpg" alt="">أبو فراولة TV</h1>
   <nav id="tabs">
     <button data-tab="tv" class="on">القنوات المجانية</button>
     <button data-tab="movies">أفلام مجانية</button>
@@ -159,6 +163,14 @@ const MOVIE_CHIPS = [
   ['ويسترن', 'subject:(western)'], ['دراما', 'subject:(drama)'], ['رسوم متحركة', 'collection:(animationandcartoons)'],
 ];
 const PAGE = 120;
+// keep sexual / adult content out of the movie list (checked on the server query and again on each result)
+const BLOCK_WORDS = ['sex','sexy','sexual','sexploitation','exploitation','grindhouse','erotic','erotica','nude','nudity','nudist',
+  'naked','burlesque','striptease','stripper','strip','teaserama','pin-up','pinup','bikini','adult','xxx','porn','stag','lust',
+  'seduction','playboy','prostitute','prostitution','hooker','brothel','vice','orgy','fetish','bondage','risque','sin','sinful','smut',
+  'molest','molester','rape','incest','bee girls','prehistoric women','cannibal','bloody pit','torture'];
+const BLOCK_RE = new RegExp('\\b(' + BLOCK_WORDS.join('|') + ')', 'i');
+const BLOCK_Q = ' AND NOT (' + ['title','subject','description'].map(f => f + ':(' + BLOCK_WORDS.filter(w => !/[- ]/.test(w)).join(' OR ') + ')').join(' OR ') + ')';
+const isClean = d => ![d.title, d.subject, d.description].flat().filter(Boolean).some(t => BLOCK_RE.test(String(t)));
 const $ = id => document.getElementById(id);
 const video = $('video');
 const cache = {};
@@ -347,12 +359,12 @@ async function searchMovies(extra = '', page = 1) {
   mQuery = extra; mPage = page;
   const base = extra.startsWith('collection:') ? `${extra} AND mediatype:(movies)` : 'collection:(feature_films) AND mediatype:(movies)' + (extra ? ` AND ${extra}` : '');
   // only items that have a browser-playable MP4
-  const url = 'https://archive.org/advancedsearch.php?q=' + encodeURIComponent(base + ' AND format:("h.264" OR "MPEG4" OR "h.264 HD")') +
-    '&fl[]=identifier&fl[]=title&fl[]=year&sort[]=downloads+desc&rows=60&page=' + page + '&output=json';
+  const url = 'https://archive.org/advancedsearch.php?q=' + encodeURIComponent(base + ' AND format:("h.264" OR "MPEG4" OR "h.264 HD")' + BLOCK_Q) +
+    '&fl[]=identifier&fl[]=title&fl[]=year&fl[]=subject&fl[]=description&sort[]=downloads+desc&rows=60&page=' + page + '&output=json';
   if (page === 1) $('mGrid').innerHTML = '<p class="note">جاري البحث...</p>';
   try {
     const j = await (await fetch(url)).json();
-    const docs = j.response.docs;
+    const docs = j.response.docs.filter(isClean);
     if (page === 1) $('mGrid').innerHTML = docs.length ? '' : '<p class="note">لا توجد نتائج.</p>';
     docs.forEach(d => {
       const el = document.createElement('div');
