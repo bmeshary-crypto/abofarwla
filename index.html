@@ -43,8 +43,21 @@ a.item{color:inherit;text-decoration:none}
 .fav{position:absolute;top:6px;left:6px;background:#000a;border:0;color:#ffd54a;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px}
 .more{display:block;margin:14px auto;padding:10px 24px}
 .note{color:var(--mut);font-size:13px;line-height:1.7}
-.hide{display:none}
+.hide{display:none!important}
 button.btn{background:var(--acc);color:#001;border:0;border-radius:8px;padding:8px 16px;cursor:pointer;font:inherit;font-size:14px}
+a.btn{text-decoration:none;display:inline-block}
+button.btn.ghost{background:var(--card2);color:var(--fg);border:1px solid #2c313c}
+button.btn.rec{background:#e53935;color:#fff}
+button.btn.rec.on{animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{background:#7a1d1b}}
+@media (prefers-reduced-motion:reduce){button.btn.rec.on{animation:none}}
+#timerPanel{padding:10px 12px;background:#0b0d11;border-top:1px solid #222}
+#timerPanel input{background:var(--card2);color:var(--fg);border:1px solid #2c313c;border-radius:8px;padding:6px 8px;font:inherit}
+#tDur{width:80px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 10px;background:var(--card);border-radius:8px;margin-top:6px;font-size:14px}
+.row .grow{flex:1;min-width:0;overflow-wrap:anywhere}
+.row button{background:var(--card2);color:var(--fg);border:1px solid #2c313c;border-radius:6px;padding:5px 10px;cursor:pointer;font:inherit;font-size:13px}
+h3{font-size:16px;margin:18px 0 6px}
 @media (max-width:600px){header{flex-direction:column;align-items:stretch}.grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}}
 </style>
 </head>
@@ -67,7 +80,20 @@ button.btn{background:var(--acc);color:#001;border:0;border-radius:8px;padding:8
     <span id="now"></span>
     <span id="msg"></span>
     <select id="quality" class="hide" title="الجودة"></select>
+    <button class="btn rec" id="recBtn">⏺ تسجيل</button>
+    <a class="btn hide" id="dlBtn" target="_blank" rel="noopener">⬇ تحميل الفيلم</a>
+    <button class="btn ghost" id="timerBtn">⏰ تسجيل بمؤقت</button>
     <button class="btn" id="close">إغلاق</button>
+  </div>
+  <div id="timerPanel" class="hide">
+    <div class="tools">
+      <span class="note">تسجيل: <b id="tName"></b></span>
+      <label class="note">يبدأ في <input type="datetime-local" id="tStart"></label>
+      <label class="note">المدة (دقيقة) <input type="number" id="tDur" min="1" max="600" value="60"></label>
+      <button class="btn" id="tAdd">جدولة التسجيل</button>
+    </div>
+    <p class="note">اترك هذه الصفحة مفتوحة والجهاز شغّال حتى ينتهي التسجيل. يُحفظ الملف في مجلد التنزيلات أو المكان الذي تختاره.</p>
+    <div id="tList"></div>
   </div>
 </div>
 
@@ -103,7 +129,17 @@ button.btn{background:var(--acc);color:#001;border:0;border-radius:8px;padding:8
 
   <!-- Custom -->
   <section id="tab-custom" class="hide">
-    <p class="note">إذا عندك اشتراك قانوني أو قائمة M3U من مزوّد الخدمة، ضع الرابط هنا. أو ضع رابط بث مباشر (.m3u8 / .mp4) لتشغيله فورًا.</p>
+    <h3>قوائمي المحفوظة (M3U)</h3>
+    <p class="note">احفظ رابط قائمة M3U من مزوّد مرخّص مرة وحدة، وتظهر دائمًا في قائمة المصادر بتبويب القنوات.</p>
+    <div class="tools">
+      <input type="text" id="lName" placeholder="اسم القائمة" style="max-width:200px">
+      <input type="url" id="lUrl" placeholder="https://.../playlist.m3u">
+      <button class="btn" id="lSave">حفظ القائمة</button>
+    </div>
+    <div id="myLists"></div>
+
+    <h3>فتح رابط مرة وحدة</h3>
+    <p class="note">ضع رابط قائمة M3U أو رابط بث مباشر (.m3u8 / .mp4) لتشغيله فورًا بدون حفظ.</p>
     <div class="tools">
       <input type="url" id="curl" placeholder="https://.../playlist.m3u  أو  https://.../stream.m3u8">
       <button class="btn" id="cgo">فتح</button>
@@ -196,7 +232,14 @@ $('tabs').onclick = e => {
 // ---------- player ----------
 function msg(t, bad) { $('msg').textContent = t || ''; $('msg').classList.toggle('bad', !!bad); }
 
-function play(url, title) {
+let current = null;
+function play(url, title, download) {
+  if (rec) stopRec();
+  current = { url, title, download };
+  $('tName').textContent = title || '';
+  $('dlBtn').classList.toggle('hide', !download);
+  $('recBtn').classList.toggle('hide', !!download);
+  if (download) $('dlBtn').href = download;
   if (hls) { hls.destroy(); hls = null; }
   video.removeAttribute('src'); video.load();
   $('quality').classList.add('hide');
@@ -223,6 +266,7 @@ video.onplaying = () => msg('');
 video.onwaiting = () => msg('تحميل...');
 video.onerror = () => { if (!hls) msg('تعذّر تشغيل هذا الرابط.', true); };
 $('close').onclick = () => {
+  if (rec) stopRec();
   if (hls) { hls.destroy(); hls = null; }
   video.pause(); video.removeAttribute('src'); video.load();
   $('player').classList.add('hide');
@@ -258,8 +302,11 @@ function parseM3U(text) {
   return out;
 }
 
-function loadSource(i) {
-  const [, p, group] = SOURCES[i] || SOURCES[0];
+// value is a SOURCES index ("3") or a saved list ("u0")
+function loadSource(v) {
+  v = String(v);
+  if (v.startsWith('u')) { const l = myLists[+v.slice(1)]; if (l) return loadList(l.url); v = '0'; }
+  const [, p, group] = SOURCES[+v] || SOURCES[0];
   loadList(/^https?:/.test(p) ? p : IPTV + p, group);
 }
 
@@ -328,10 +375,169 @@ $('tvMore').onclick = () => { shown += PAGE; renderTV(); };
 $('q').oninput = () => { shown = PAGE; renderTV(); };
 $('group').onchange = () => { shown = PAGE; renderTV(); };
 
-$('src').innerHTML = SOURCES.map(([n], i) => `<option value="${i}">${n}</option>`).join('');
-$('src').value = String(store.get('src2', 0));
-if (!$('src').value) $('src').value = '0';
-$('src').onchange = () => { store.set('src2', +$('src').value); $('q').value = ''; loadSource(+$('src').value); };
+// ---------- saved M3U lists ----------
+let myLists = store.get('myLists', []);
+
+function renderSources() {
+  const keep = $('src').value || String(store.get('src3', '0'));
+  $('src').innerHTML =
+    (myLists.length ? '<optgroup label="قوائمي">' + myLists.map((l, i) => `<option value="u${i}">⭐ ${esc(l.name)}</option>`).join('') + '</optgroup>' : '') +
+    '<optgroup label="قوائم مجانية">' + SOURCES.map(([n], i) => `<option value="${i}">${n}</option>`).join('') + '</optgroup>';
+  $('src').value = keep;
+  if (!$('src').value) $('src').value = '0';
+}
+
+function renderMyLists() {
+  const box = $('myLists');
+  box.innerHTML = myLists.length ? '' : '<p class="note">لا توجد قوائم محفوظة بعد.</p>';
+  myLists.forEach((l, i) => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `<b>${esc(l.name)}</b><span class="grow note">${esc(l.url)}</span>
+      <button data-a="open">فتح</button><button data-a="del">حذف</button>`;
+    row.onclick = e => {
+      const a = e.target.dataset.a;
+      if (a === 'open') { switchTo('tv'); $('src').value = 'u' + i; $('src').onchange(); }
+      if (a === 'del') {
+        myLists.splice(i, 1); store.set('myLists', myLists);
+        if ($('src').value.startsWith('u')) $('src').value = '0';
+        renderSources(); renderMyLists();
+      }
+    };
+    box.appendChild(row);
+  });
+}
+
+$('lSave').onclick = () => {
+  const url = $('lUrl').value.trim(), name = $('lName').value.trim() || 'قائمتي ' + (myLists.length + 1);
+  if (!/^https?:\/\//i.test(url)) { $('lUrl').focus(); return; }
+  myLists.push({ name, url }); store.set('myLists', myLists);
+  $('lName').value = $('lUrl').value = '';
+  renderSources(); renderMyLists();
+};
+
+renderSources(); renderMyLists();
+$('src').onchange = () => { store.set('src3', $('src').value); $('q').value = ''; loadSource($('src').value); };
+
+// ---------- recording ----------
+let rec = null;
+const pickMime = () => ['video/mp4;codecs=avc1,mp4a', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm']
+  .find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || '';
+const recExt = () => pickMime().includes('mp4') ? 'mp4' : 'webm';
+const recName = title => `${(title || 'تسجيل').replace(/[\\/:*?"<>|]+/g, ' ').trim().slice(0, 60)} ${new Date().toLocaleString('sv').slice(0, 16).replace(/[: ]/g, '-')}.${recExt()}`;
+const fmt = s => [s / 3600, s / 60 % 60, s % 60].map(n => String(Math.floor(n)).padStart(2, '0')).join(':');
+
+// asks where to save when the browser supports it (desktop Chrome/Edge); otherwise the file goes to Downloads
+async function askSaveHandle(title) {
+  if (!window.showSaveFilePicker) return null;
+  const ext = recExt();
+  return showSaveFilePicker({ suggestedName: recName(title), types: [{ description: 'فيديو', accept: { ['video/' + ext]: ['.' + ext] } }] });
+}
+
+async function startRec(maxMinutes, handle) {
+  if (rec) return;
+  const capture = video.captureStream || video.mozCaptureStream;
+  if (!capture || !window.MediaRecorder) return msg('متصفحك لا يدعم التسجيل. استخدم Chrome أو Edge على الكمبيوتر أو أندرويد.', true);
+  // the captured stream has no tracks until the picture is actually playing
+  if (!video.videoWidth || video.paused) {
+    msg('بانتظار بدء التشغيل للتسجيل...');
+    const ok = await new Promise(res => {
+      const t = setTimeout(() => res(false), 30000);
+      video.addEventListener('playing', () => { clearTimeout(t); setTimeout(() => res(true), 500); }, { once: true });
+    });
+    if (!ok) return msg('تعذّر بدء التسجيل لأن القناة لم تبدأ.', true);
+  }
+  const mime = pickMime(), name = recName(current && current.title);
+  let mr;
+  try { mr = new MediaRecorder(capture.call(video), mime ? { mimeType: mime, videoBitsPerSecond: 8e6 } : undefined); }
+  catch { return msg('لا يمكن تسجيل هذا المصدر.', true); }
+  const writable = handle ? await handle.createWritable() : null;
+  const chunks = [];
+  mr.ondataavailable = e => { if (e.data.size) writable ? writable.write(e.data) : chunks.push(e.data); };
+  mr.onstop = async () => {
+    if (writable) await writable.close();
+    else {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob(chunks, { type: mime || 'video/webm' }));
+      a.download = name; document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 60000);
+    }
+    msg('✔ تم حفظ التسجيل: ' + (handle ? handle.name : name));
+  };
+  try { mr.start(1000); }
+  catch { if (writable) writable.abort(); return msg('لا يمكن تسجيل هذا المصدر (الموقع يمنع التسجيل).', true); }
+  rec = { mr, t0: Date.now() };
+  rec.tick = setInterval(updRecUI, 1000);
+  if (maxMinutes) rec.limit = setTimeout(stopRec, maxMinutes * 60000);
+  updRecUI();
+}
+
+function stopRec() {
+  if (!rec) return;
+  clearInterval(rec.tick); clearTimeout(rec.limit);
+  if (rec.mr.state !== 'inactive') rec.mr.stop();
+  rec = null; updRecUI();
+}
+
+function updRecUI() {
+  const b = $('recBtn');
+  b.classList.toggle('on', !!rec);
+  b.textContent = rec ? '⏹ إيقاف ' + fmt((Date.now() - rec.t0) / 1000) : '⏺ تسجيل';
+}
+
+$('recBtn').onclick = async () => {
+  if (rec) return stopRec();
+  let handle = null;
+  try { handle = await askSaveHandle(current && current.title); } catch { return; } // user cancelled the save dialog
+  startRec(0, handle);
+};
+
+// ---------- timed recording ----------
+let timers = [], wakeLock = null;
+const localInput = d => new Date(d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+
+$('timerBtn').onclick = () => {
+  $('timerPanel').classList.toggle('hide');
+  if (!$('tStart').value) $('tStart').value = localInput(new Date(Date.now() + 5 * 60000));
+};
+
+$('tAdd').onclick = async () => {
+  if (!current) return;
+  const start = new Date($('tStart').value).getTime(), mins = +$('tDur').value;
+  if (!start || !(mins > 0)) return msg('حدد وقت البداية والمدة.', true);
+  let handle = null;
+  try { handle = await askSaveHandle(current.title); } catch { return; }
+  timers.push({ ...current, start, mins, handle, id: Date.now() });
+  timers.sort((a, b) => a.start - b.start);
+  renderTimers();
+  try { wakeLock = wakeLock || await navigator.wakeLock.request('screen'); } catch {}
+};
+
+function renderTimers() {
+  const box = $('tList');
+  box.innerHTML = '';
+  timers.forEach(t => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `<span class="grow">⏰ <b>${esc(t.title)}</b> — ${new Date(t.start).toLocaleString('ar', { dateStyle: 'medium', timeStyle: 'short' })} لمدة ${t.mins} دقيقة</span><button>إلغاء</button>`;
+    row.querySelector('button').onclick = () => { timers = timers.filter(x => x !== t); renderTimers(); };
+    box.appendChild(row);
+  });
+  $('timerBtn').textContent = timers.length ? `⏰ مؤقتات (${timers.length})` : '⏰ تسجيل بمؤقت';
+}
+
+setInterval(() => {
+  const due = timers.filter(t => Date.now() >= t.start);
+  if (!due.length) return;
+  timers = timers.filter(t => !due.includes(t));
+  renderTimers();
+  const t = due[due.length - 1];
+  play(t.url, t.title, t.download);
+  video.addEventListener('playing', () => startRec(t.mins, t.handle), { once: true });
+  // autoplay without a click can be blocked; muted playback is always allowed and still records the sound
+  setTimeout(() => { if (video.paused) { video.muted = true; video.play().catch(() => {}); } }, 4000);
+  if (!timers.length && wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+}, 2000);
 
 function renderFavs() {
   const g = $('favGrid'); g.innerHTML = '';
@@ -389,7 +595,8 @@ async function playMovie(id, title) {
     // highest quality = largest file, preferring mp4
     vids.sort((a, b) => (/\.mp4$/i.test(b.name) - /\.mp4$/i.test(a.name)) || ((+b.size || 0) - (+a.size || 0)));
     const path = vids[0].name.split('/').map(encodeURIComponent).join('/');
-    play(`https://archive.org/download/${encodeURIComponent(id)}/${path}`, title);
+    const fileUrl = `https://archive.org/download/${encodeURIComponent(id)}/${path}`;
+    play(fileUrl, title, fileUrl);
   } catch {
     msg('تعذّر تحميل بيانات الفيلم.', true);
   }
@@ -426,7 +633,7 @@ $('lfile').onchange = e => {
 };
 
 // ---------- start ----------
-loadSource(+$('src').value);
+loadSource($('src').value);
 const lastTab = store.get('tab', 'tv');
 if (lastTab !== 'tv') switchTo(lastTab);
 </script>
