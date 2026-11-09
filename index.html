@@ -85,6 +85,7 @@ h3{font-size:16px;margin:18px 0 6px}
     <select id="quality" class="hide" title="الجودة"></select>
     <button class="btn rec" id="recBtn">⏺ تسجيل</button>
     <a class="btn ghost hide" id="appBtn" href="https://github.com/bmeshary-crypto/abofarwla/releases/tag/app" target="_blank" rel="noopener">📥 حمّل التطبيق لتشغيلها</a>
+    <a class="btn ghost hide" id="ownerBtn" target="_blank" rel="noopener"></a>
     <a class="btn hide" id="dlBtn" target="_blank" rel="noopener">⬇ تحميل الفيلم</a>
     <button class="btn ghost" id="timerBtn">⏰ تسجيل بمؤقت</button>
     <button class="btn" id="close">إغلاق</button>
@@ -259,6 +260,7 @@ function play(url, title, download) {
   if (rec) stopRec();
   current = { url, title, download };
   $('appBtn').classList.add('hide');
+  $('ownerBtn').classList.add('hide');
   $('tName').textContent = title || '';
   $('dlBtn').classList.toggle('hide', !download);
   $('recBtn').classList.toggle('hide', !!download);
@@ -281,7 +283,7 @@ function play(url, title, download) {
     hls.attachMedia(video);
     hls.on(Hls.Events.MANIFEST_PARSED, () => { buildQuality(); video.play().catch(() => {}); });
     hls.on(Hls.Events.ERROR, (_, d) => {
-      if (d.fatal) IN_APP ? msg('تعذّر تشغيل هذه القناة — قد تكون متوقفة حاليًا أو محجوبة في بلدك.', true) : needApp();
+      if (d.fatal && !ownerOnly()) IN_APP ? msg('تعذّر تشغيل هذه القناة — قد تكون متوقفة حاليًا أو محجوبة في بلدك.', true) : needApp();
     });
   } else {
     video.src = url;
@@ -293,6 +295,17 @@ video.onwaiting = () => msg('تحميل...');
 video.onerror = () => { if (!hls && current) IN_APP ? msg('تعذّر تشغيل هذا الرابط.', true) : needApp(); };
 
 const IN_APP = /AbuFarawlaApp/.test(navigator.userAgent);
+// Broadcasters that lock their free stream to their own site: send viewers there
+const OWNER_SITES = [[/rotana|روتانا/i, 'روتانا', 'https://rotana.net/']];
+function ownerOnly() {
+  const o = OWNER_SITES.find(([re]) => re.test(current?.title || ''));
+  if (!o) return false;
+  msg(`قناة ${o[1]} تسمح بالمشاهدة من موقعها فقط — مجانًا.`, true);
+  $('ownerBtn').textContent = `📺 شاهد على موقع ${o[1]}`;
+  $('ownerBtn').href = o[2];
+  $('ownerBtn').classList.remove('hide');
+  return true;
+}
 function needApp() {
   msg('المتصفح لا يسمح بتشغيل هذه القناة — تعمل داخل تطبيق أبو فراولة TV.', true);
   $('appBtn').classList.remove('hide');
@@ -310,7 +323,7 @@ function showYT(on) {
   $('ytWrap').classList.toggle('hide', !on);
   video.classList.toggle('hide', on);
   ['recBtn', 'timerBtn'].forEach(id => $(id).classList.toggle('hide', on));
-  if (on) $('appBtn').classList.add('hide');
+  if (on) { $('appBtn').classList.add('hide'); $('ownerBtn').classList.add('hide'); }
   if (on) { $('timerPanel').classList.add('hide'); $('dlBtn').classList.add('hide'); $('quality').classList.add('hide'); }
   else if ($('ytFrame').src) $('ytFrame').src = 'about:blank';
 }
