@@ -3,8 +3,8 @@
 // Removed: http links, dead links (network error, 404, 5xx), servers
 // without CORS, and HLS channels whose playlist opens but whose video
 // segments are refused (locked to the broadcaster's own site).
-// Kept: a playlist answering 401/403, since that is often a geo-block that
-// works for viewers in the right country.
+// Kept: a channel the list marks [Geo-blocked] whose playlist answers
+// 401/403, since it may work for viewers in the right country.
 import { readFile, writeFile } from 'node:fs/promises';
 
 const ORIGIN = 'https://bmeshary-crypto.github.io';
@@ -45,13 +45,15 @@ async function segmentRefused(listUrl, text) {
   return false;
 }
 
-// locked: the list says the stream wants the broadcaster's own page as referrer,
-// which the site and apps never send, so a refusal there is not a geo-block
-async function check(url, locked) {
+// geo: the list marks the channel [Geo-blocked], so a refusal from GitHub's US
+// servers may still play in the right country. Any other refusal means the
+// stream is closed. locked: the list says it wants the broadcaster's own page
+// as referrer, which the site and apps never send, so a refusal there is final.
+async function check(url, geo, locked) {
   if (!url.startsWith('https:')) return false;
   try {
     const { r, text } = await get(url);
-    if (r.status === 401 || r.status === 403) return !locked;
+    if (r.status === 401 || r.status === 403) return geo && !locked;
     if (!r.ok ||!r.headers.has('access-control-allow-origin')) return false;
     if (text) try { return !(await segmentRefused(r.url, text)); } catch { return true; }
     return true;
@@ -63,7 +65,8 @@ let next = 0, done = 0;
 await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
   while (next < entries.length) {
     const i = next++;
-    keep[i] = await check(entries[i].url, entries[i].info.some(l => l.includes('http-referrer')));
+    const info = entries[i].info.join('\n');
+    keep[i] = await check(entries[i].url, info.includes('[Geo-blocked]'), info.includes('http-referrer'));
     if (++done % 1000 === 0) console.log(`${done}/${entries.length}`);
   }
 }));
