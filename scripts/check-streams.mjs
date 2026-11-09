@@ -45,12 +45,14 @@ async function segmentRefused(listUrl, text) {
   return false;
 }
 
-async function check(url) {
+// locked: the list says the stream wants the broadcaster's own page as referrer,
+// which the site and apps never send, so a refusal there is not a geo-block
+async function check(url, locked) {
   if (!url.startsWith('https:')) return false;
   try {
     const { r, text } = await get(url);
-    if (r.status === 401 || r.status === 403) return true;
-    if (!r.ok || !r.headers.has('access-control-allow-origin')) return false;
+    if (r.status === 401 || r.status === 403) return !locked;
+    if (!r.ok ||!r.headers.has('access-control-allow-origin')) return false;
     if (text) try { return !(await segmentRefused(r.url, text)); } catch { return true; }
     return true;
   } catch { return false; }
@@ -61,7 +63,7 @@ let next = 0, done = 0;
 await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
   while (next < entries.length) {
     const i = next++;
-    keep[i] = await check(entries[i].url);
+    keep[i] = await check(entries[i].url, entries[i].info.some(l => l.includes('http-referrer')));
     if (++done % 1000 === 0) console.log(`${done}/${entries.length}`);
   }
 }));
