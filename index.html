@@ -61,6 +61,42 @@ button.btn.rec.on{animation:blink 1s steps(2) infinite}
 .row button{background:var(--card2);color:var(--fg);border:1px solid #2c313c;border-radius:6px;padding:5px 10px;cursor:pointer;font:inherit;font-size:13px}
 h3{font-size:16px;margin:18px 0 6px}
 @media (max-width:600px){header{flex-direction:column;align-items:stretch}.grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}}
+
+/* ---------- TV (remote control, seen from the sofa) ---------- */
+html.tv body{font-size:19px}
+html.tv header{padding:16px 40px;gap:24px}
+html.tv header h1{font-size:28px;white-space:nowrap;flex:none}
+html.tv header h1 img{height:70px}
+html.tv nav{gap:10px}
+html.tv nav button,html.tv .chip{font-size:19px;padding:10px 20px}
+html.tv main{padding:22px 40px 40px}
+html.tv select,html.tv input[type=text],html.tv input[type=url],html.tv button.btn{font-size:19px;padding:11px 16px}
+html.tv .grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px}
+html.tv .item{padding:10px;border-radius:14px}
+html.tv .item:hover{border-color:transparent}
+html.tv .item .t{font-size:18px}
+html.tv .item .g{font-size:14px}
+html.tv .fav{width:34px;height:34px;font-size:19px;pointer-events:none}
+html.tv .note{font-size:16px}
+html.tv .row{font-size:18px}
+html.tv .row button{font-size:17px;padding:8px 14px}
+html.tv #recBtn,html.tv #timerBtn,html.tv #timerPanel,html.tv #dlBtn,html.tv #ytChangeKey{display:none!important}
+html.tv :focus{outline:none}
+html.tv .focus{outline:4px solid #ffd54a!important;outline-offset:3px;position:relative;z-index:2;box-shadow:0 0 0 8px #ffd54a40,0 12px 30px #000a}
+html.tv .item,html.tv .chip,html.tv button.btn,html.tv nav button{transition:transform .12s,box-shadow .12s}
+html.tv .item.focus{transform:scale(1.08)}
+html.tv .chip.focus,html.tv button.btn.focus,html.tv nav button.focus{transform:scale(1.05)}
+/* the player fills the screen; Back closes it, up/down change channel */
+html.tv #player{position:fixed;inset:0;z-index:20}
+html.tv #player video,html.tv #ytWrap{width:100vw;height:100vh;max-height:none;aspect-ratio:auto}
+html.tv #bar{position:absolute;inset:auto 0 0 0;padding:18px 40px 26px;font-size:20px;transition:opacity .4s;background:linear-gradient(transparent,#000d 45%)}
+html.tv #bar.quiet{opacity:0}
+html.tv #now{font-size:26px}
+html.tv #tvHint{display:block}
+#tvHint{display:none;width:100%;font-size:15px;color:var(--mut)}
+#toast{position:fixed;inset:auto 0 60px;margin:auto;width:max-content;max-width:90vw;z-index:30;padding:12px 24px;border-radius:999px;
+  background:#ffd54a;color:#111;font-weight:700;font-size:20px;opacity:0;transition:opacity .3s;pointer-events:none}
+#toast.on{opacity:1}
 </style>
 </head>
 <body>
@@ -89,6 +125,7 @@ h3{font-size:16px;margin:18px 0 6px}
     <a class="btn hide" id="dlBtn" target="_blank" rel="noopener">⬇ تحميل الفيلم</a>
     <button class="btn ghost" id="timerBtn">⏰ تسجيل بمؤقت</button>
     <button class="btn" id="close">إغلاق</button>
+    <span id="tvHint">▲▼ القناة السابقة / التالية · رجوع للإغلاق</span>
   </div>
   <div id="timerPanel" class="hide">
     <div class="tools">
@@ -231,6 +268,10 @@ const BLOCK_Q = ' AND NOT (' + ['title','subject','description'].map(f => f + ':
 const isClean = d => ![d.title, d.subject, d.description].flat().filter(Boolean).some(t => BLOCK_RE.test(String(t)));
 const $ = id => document.getElementById(id);
 const video = $('video');
+// the Android app says so when it runs on a TV; ?tv=1 previews the TV layout in a browser
+const TV = /AbuFarawlaTV/.test(navigator.userAgent) || /[?&]tv=1\b/.test(location.search);
+if (TV) document.documentElement.classList.add('tv');
+let chList = [], chIdx = -1, returnTo = null;
 const cache = {};
 let channels = [], shown = PAGE, hls = null;
 
@@ -272,7 +313,7 @@ function play(url, title, download) {
   $('player').classList.remove('hide');
   $('now').textContent = title || '';
   msg('جاري التشغيل...');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  playerOpened();
 
   // a web page can't play http streams or servers without CORS; the desktop/Android app can
   if (!IN_APP && location.protocol === 'https:' && url.startsWith('http:')) return needApp();
@@ -338,7 +379,7 @@ function playYT(id, title) {
   $('player').classList.remove('hide');
   $('now').textContent = title;
   msg('');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  playerOpened();
 }
 
 function buildQuality() {
@@ -413,7 +454,7 @@ const PH = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3
 function card(c) {
   const isFav = favs.some(f => f.url === c.url);
   const el = document.createElement('div');
-  el.className = 'item';
+  el.className = 'item'; el._c = c;
   el.innerHTML = `<button class="fav" title="المفضلة">${isFav ? '★' : '☆'}</button>
     <img loading="lazy" src="${esc(c.logo || PH)}" onerror="this.src='${PH}'" alt="">
     <div class="t">${esc(c.name)}</div><div class="g">${esc(c.group || '')}</div>`;
@@ -427,6 +468,8 @@ function card(c) {
       if (!$('tab-fav').classList.contains('hide')) renderFavs();
       return;
     }
+    // up/down in the player step through the channels shown next to this one
+    chList = [...el.parentNode.children].map(x => x._c).filter(Boolean); chIdx = chList.indexOf(c);
     play(c.url, c.name);
   };
   return el;
@@ -657,6 +700,7 @@ async function searchMovies(extra = '', page = 1) {
 
 async function playMovie(id, title) {
   $('player').classList.remove('hide'); $('now').textContent = title; msg('جاري تجهيز الفيلم...');
+  playerOpened();
   try {
     const m = await (await fetch('https://archive.org/metadata/' + encodeURIComponent(id))).json();
     const vids = (m.files || []).filter(f => /\.(mp4|m4v|webm)$/i.test(f.name));
@@ -834,10 +878,109 @@ async function ytSearch(q, more) {
   }
 }
 
+// ---------- TV remote: arrows move between the nearest items, OK opens, Back goes back ----------
+let holdT = null, held = false, quietT = null;
+const NAV = 'nav button, main button:not(.fav), main input, main select, main .item';
+const PLAYER_NAV = '#bar button, #bar a.btn, #bar select';
+const isOpen = id => !$(id).classList.contains('hide');
+function visibleEl(el) {
+  if (!el || !el.isConnected || el.closest('.hide')) return false;
+  const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0;
+}
+function focusEl(el) {
+  if (!visibleEl(el)) return;
+  if (!el.matches('button, a, input, select')) el.setAttribute('tabindex', '-1');
+  el.focus({ preventScroll: true });
+  document.querySelectorAll('.focus').forEach(x => x.classList.remove('focus'));
+  el.classList.add('focus');
+  if (el.closest('header')) window.scrollTo({ top: 0, behavior: 'smooth' });
+  else if (!el.closest('#bar')) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+function playerOpened() {
+  if (!TV) return window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (!returnTo) returnTo = document.activeElement;
+  focusEl($('close')); wakeBar();
+}
+// back to the card the player was opened from
+$('close').addEventListener('click', () => { if (TV) { focusEl(returnTo); returnTo = null; } });
+// distance between two ranges on one axis, 0 when they overlap
+const apart = (a1, a2, b1, b2) => Math.max(0, b1 - a2, a1 - b2);
+function move(dir) {
+  const all = [...document.querySelectorAll(isOpen('player') ? PLAYER_NAV : NAV)].filter(visibleEl);
+  const cur = document.activeElement;
+  if (!all.includes(cur)) return focusEl(all.find(e => e.classList.contains('on')) || all[0]);
+  const a = cur.getBoundingClientRect();
+  let best = null, score = Infinity;
+  for (const el of all) {
+    if (el === cur) continue;
+    const b = el.getBoundingClientRect(); let gap, side;
+    if (dir === 'ArrowRight') { if (b.left < a.right - 4) continue; gap = b.left - a.right; side = apart(a.top, a.bottom, b.top, b.bottom); }
+    else if (dir === 'ArrowLeft') { if (b.right > a.left + 4) continue; gap = a.left - b.right; side = apart(a.top, a.bottom, b.top, b.bottom); }
+    else if (dir === 'ArrowDown') { if (b.top < a.bottom - 4) continue; gap = b.top - a.bottom; side = apart(a.left, a.right, b.left, b.right); }
+    else { if (b.bottom > a.top + 4) continue; gap = a.top - b.bottom; side = apart(a.left, a.right, b.left, b.right); }
+    const s = Math.max(0, gap) + side * 3 + Math.hypot(b.left + b.width / 2 - a.left - a.width / 2, b.top + b.height / 2 - a.top - a.height / 2) * .05;
+    if (s < score) { score = s; best = el; }
+  }
+  if (best) focusEl(best);
+}
+function toast(t) {
+  let el = $('toast'); if (!el) { el = document.createElement('div'); el.id = 'toast'; document.body.append(el); }
+  el.textContent = t; el.classList.add('on'); clearTimeout(el.t); el.t = setTimeout(() => el.classList.remove('on'), 1800);
+}
+function wakeBar() {
+  $('bar').classList.remove('quiet'); clearTimeout(quietT);
+  quietT = setTimeout(() => $('bar').classList.add('quiet'), 4000);
+}
+function stepChannel(d) {
+  if (!current || chIdx < 0 || chList[chIdx]?.url !== current.url) return;
+  chIdx = (chIdx + d + chList.length) % chList.length;
+  play(chList[chIdx].url, chList[chIdx].name);
+}
+// called by the Android app on Back; true means the page handled it
+window.tvBack = () => {
+  if (isOpen('player')) { $('close').click(); return true; }
+  if (TV && !document.activeElement?.closest('nav')) { focusEl(document.querySelector('#tabs button.on')); return true; }
+  return false;
+};
+if (TV) {
+  video.removeAttribute('controls');
+  document.addEventListener('focusin', e => e.target.classList?.add('focus'));
+  document.addEventListener('focusout', e => e.target.classList?.remove('focus'));
+  document.addEventListener('keydown', e => {
+    const k = e.key, el = document.activeElement;
+    if (isOpen('player')) {
+      wakeBar();
+      if (/^(ArrowUp|ArrowDown|ChannelUp|ChannelDown)$/.test(k) && el?.tagName !== 'SELECT' && current && chIdx >= 0) {
+        e.preventDefault(); return stepChannel(/Up$/.test(k) ? -1 : 1);
+      }
+    }
+    if (k.startsWith('Arrow')) {
+      if (el?.tagName === 'INPUT' && /^(text|url|number)$/.test(el.type) && (k === 'ArrowLeft' || k === 'ArrowRight')) return; // text cursor
+      e.preventDefault(); return move(k);
+    }
+    if (/^Media(PlayPause|Play|Pause)$/.test(k) && isOpen('player') && !video.classList.contains('hide')) {
+      e.preventDefault(); return video.paused ? video.play().catch(() => {}) : video.pause();
+    }
+    if (k === 'Escape' && window.tvBack()) return e.preventDefault();
+    if (k !== 'Enter' || !el?.classList.contains('item')) return;
+    e.preventDefault();
+    // OK plays; holding OK on a channel adds it to (or removes it from) the favourites
+    const star = el.querySelector('.fav');
+    if (!star) return el.click();
+    if (!e.repeat && !holdT) { held = false; holdT = setTimeout(() => { held = true; star.click(); toast(star.textContent === '★' ? '⭐ أُضيفت إلى المفضلة' : 'حُذفت من المفضلة'); }, 700); }
+  });
+  document.addEventListener('keyup', e => {
+    if (e.key !== 'Enter' || !holdT) return;
+    clearTimeout(holdT); holdT = null;
+    if (!held) document.activeElement?.click();
+  });
+}
+
 // ---------- start ----------
 loadSource($('src').value);
 const lastTab = store.get('tab', 'tv');
 if (lastTab !== 'tv') switchTo(lastTab);
+if (TV) focusEl(document.querySelector('#tabs button.on'));
 </script>
 </body>
 </html>

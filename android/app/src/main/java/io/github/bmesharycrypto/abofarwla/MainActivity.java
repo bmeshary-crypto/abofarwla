@@ -1,11 +1,14 @@
 package io.github.bmesharycrypto.abofarwla;
 
 import android.app.Activity;
+import android.app.UiModeManager;
+import android.content.res.Configuration;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -41,14 +44,18 @@ public class MainActivity extends Activity {
         s.setDomStorageEnabled(true);
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " AbuFarawlaApp");
+        // on a TV the page switches to its remote-control layout
+        boolean tv = ((UiModeManager) getSystemService(UI_MODE_SERVICE)).getCurrentModeType() == Configuration.UI_MODE_TYPE_TELEVISION
+                || getPackageManager().hasSystemFeature("android.software.leanback");
+        s.setUserAgentString(s.getUserAgentString() + (tv ? " AbuFarawlaApp AbuFarawlaTV" : " AbuFarawlaApp"));
+        if (tv) getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         web.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest r) {
                 String u = r.getUrl().toString();
                 if (u.startsWith(SITE)) return false;
-                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(u)));
+                try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(u))); } catch (Exception ignored) {} // TVs often have no browser
                 return true;
             }
 
@@ -141,9 +148,13 @@ public class MainActivity extends Activity {
     protected void onSaveInstanceState(Bundle b) { super.onSaveInstanceState(b); web.saveState(b); }
 
     @Override
+    // Back first asks the page (close the player, return to the tabs),
+    // and leaves the app only when the page has nothing left to close.
     public void onBackPressed() {
-        if (fullView != null) web.getWebChromeClient().onHideCustomView();
-        else if (web.canGoBack()) web.goBack();
-        else super.onBackPressed();
+        if (fullView != null) { web.getWebChromeClient().onHideCustomView(); return; }
+        web.evaluateJavascript("window.tvBack ? tvBack() : false", v -> {
+            if ("true".equals(v)) return;
+            if (web.canGoBack()) web.goBack(); else finish();
+        });
     }
 }
