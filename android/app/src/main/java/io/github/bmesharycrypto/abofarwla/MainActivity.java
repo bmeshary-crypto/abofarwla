@@ -49,6 +49,8 @@ public class MainActivity extends Activity {
                 || getPackageManager().hasSystemFeature("android.software.leanback");
         s.setUserAgentString(s.getUserAgentString() + (tv ? " AbuFarawlaApp AbuFarawlaTV" : " AbuFarawlaApp"));
         if (tv) getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        // the page shows "check for updates" when this is present
+        web.addJavascriptInterface(new Updater(this, web, "bmeshary-crypto/abofarwla"), "AppUpdate");
 
         web.setWebViewClient(new WebViewClient() {
             @Override

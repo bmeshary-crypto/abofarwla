@@ -1,5 +1,8 @@
 plugins { id 'com.android.application' }
 
+// every GitHub build gets the next number, so the update button can tell old from new
+def run = (System.getenv('GITHUB_RUN_NUMBER') ?: '0').toInteger()
+
 android {
     namespace 'io.github.bmesharycrypto.abofarwla'
     compileSdk 34
@@ -7,8 +10,23 @@ android {
         applicationId 'io.github.bmesharycrypto.abofarwla'
         minSdk 24
         targetSdk 34
-        versionCode 5
-        versionName '1.4'
+        versionCode 100 + run
+        versionName "1.${run}"
+    }
+    // one fixed key, decoded from repo secrets by the workflow: Android only installs
+    // an update signed with the same key as the installed app
+    signingConfigs {
+        release {
+            storeFile file(System.getenv('APP_KEYSTORE_FILE') ?: 'app-key.p12')
+            storePassword System.getenv('APP_KEY_PASSWORD')
+            keyAlias 'app'
+            keyPassword System.getenv('APP_KEY_PASSWORD')
+        }
+    }
+    buildTypes {
+        release {
+            if (System.getenv('APP_KEY_PASSWORD')) signingConfig signingConfigs.release
+        }
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
