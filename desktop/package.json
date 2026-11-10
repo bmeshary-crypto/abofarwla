@@ -13,6 +13,7 @@
     "appId": "io.github.bmeshary-crypto.abofarwla",
     "files": [
       "main.js",
+      "preload.js",
       "icon.png"
     ],
     "win": {
@@ -33,5 +34,8 @@
   },
   "siteUrl": "https://bmeshary-crypto.github.io/abofarwla/",
   "appTag": "AbuFarawlaApp",
-  "appIcon": "icon.png"
+  "appIcon": "icon.png",
+  "repo": "bmeshary-crypto/abofarwla",
+  "setupName": "AbuFarawla-TV-Setup.exe",
+  "portableName": "AbuFarawla-TV-portable.exe"
 }

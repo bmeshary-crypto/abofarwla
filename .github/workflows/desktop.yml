@@ -1,0 +1,36 @@
+name: Build Windows app
+
+on:
+  push:
+    paths: ['desktop/**', '.github/workflows/desktop.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # every build gets the next version, so the in-app update can tell old from new
+      - name: Build
+        working-directory: desktop
+        run: |
+          npm ci
+          npm version "1.0.${GITHUB_RUN_NUMBER}" --no-git-tag-version
+          npm run dist
+      - name: Upload to the app release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload app desktop/dist/AbuFarawla-TV-Setup.exe desktop/dist/AbuFarawla-TV-portable.exe --clobber
+          # read by the app's "check for updates" button; uploaded last so it never names a file that isn't there yet
+          echo "{\"version\": \"1.0.${GITHUB_RUN_NUMBER}\"}" > windows-version.json
+          gh release upload app windows-version.json --clobber

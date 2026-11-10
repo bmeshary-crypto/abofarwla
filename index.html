@@ -110,6 +110,7 @@ html.tv #tvHint{display:block}
     <button data-tab="custom">رابط / قائمة خاصة</button>
     <button data-tab="local">ملفات جهازي</button>
   </nav>
+  <button class="btn ghost hide" id="updBtn" style="margin-inline-start:auto;flex:none">🔄 البحث عن تحديث</button>
 </header>
 
 <div id="player" class="hide">
@@ -878,9 +879,33 @@ async function ytSearch(q, more) {
   }
 }
 
+// ---------- "check for updates": only inside the Android / TV / Windows apps ----------
+// The app finds the newest build on GitHub, downloads and installs it, and reports back here.
+const UPD = window.AppUpdate || window.appUpdate;
+if (UPD) {
+  const b = $('updBtn'), idle = '🔄 البحث عن تحديث';
+  let resetT = null;
+  b.classList.remove('hide');
+  window.onAppUpdate = (state, d) => {
+    clearTimeout(resetT);
+    b.disabled = /^(checking|downloading|installing)$/.test(state);
+    b.textContent = {
+      checking: '🔄 جاري البحث عن تحديث...',
+      latest: '✔ لديك أحدث نسخة' + (d ? ` (${d})` : ''),
+      downloading: '⬇ جاري تحميل التحديث' + (+d >= 0 ? ` ${d}%` : '...'),
+      installing: '⚙ جاري تثبيت التحديث...',
+      permission: '⚠ اسمح بتثبيت التحديثات ثم اضغط مرة أخرى',
+      error: '⚠ تعذّر التحديث — حاول لاحقًا',
+    }[state] || idle;
+    if (state !== 'checking' && state !== 'downloading') resetT = setTimeout(() => { b.disabled = false; b.textContent = idle; }, state === 'installing' ? 30000 : 7000);
+  };
+  window.appUpdate?.onStatus?.(window.onAppUpdate);
+  b.onclick = () => { window.onAppUpdate('checking'); UPD.check(); };
+}
+
 // ---------- TV remote: arrows move between the nearest items, OK opens, Back goes back ----------
 let holdT = null, held = false, quietT = null;
-const NAV = 'nav button, main button:not(.fav), main input, main select, main .item';
+const NAV = '#updBtn, nav button, main button:not(.fav), main input, main select, main .item';
 const PLAYER_NAV = '#bar button, #bar a.btn, #bar select';
 const isOpen = id => !$(id).classList.contains('hide');
 function visibleEl(el) {
